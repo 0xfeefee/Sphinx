@@ -1,0 +1,7 @@
+
+## Ignore
+.w_scripts
+bin/*
+
+## Exceptions
+!.gitkeep
