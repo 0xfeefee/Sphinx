@@ -8,6 +8,7 @@ project(Sphinx
 )
 
 ## Basic configuration and variables:
+set(CMAKE_C_STANDARD   17)
 set(CMAKE_CXX_STANDARD 17)
 set(SRC 			   "../src")
 
@@ -36,10 +37,19 @@ target_precompile_headers(${PROJECT_NAME}
 
 ## Make sure to enable AES intrinsics:
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	set(CMAKE_CXX_COMPILER_FLAGS_DEBUG "-Wextra -Werror")
+	set(CMAKE_CXX_COMPILER_FLAGS_RELEASE "-Wall -Wextra -Werror")
 	target_compile_options(${PROJECT_NAME}
 		PRIVATE
 		-maes
 	)
 else()
 	message(FATAL_ERROR "Untested compiler!")
+endif()
+
+if (WIN32)
+	target_compile_definitions(${PROJECT_NAME}
+		PRIVATE
+		PROJECT_PLATFORM_WIN64
+	)
 endif()

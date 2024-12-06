@@ -2,6 +2,7 @@
 ## Ignore
 .w_scripts
 bin/*
+.clangd
 
 ## Exceptions
 !.gitkeep

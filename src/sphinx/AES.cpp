@@ -2,80 +2,71 @@
 // Implements:
 #include <sphinx/AES.hpp>
 
-// Dependencies (3rd_party):
-#include <wmmintrin.h>
-
-
 namespace sphinx {
 
     /*
-        Assist in generating a new key for the key schedule from an existing key.
+        Helpers for key expansion rounds:
     */
-    static inline __m128i
-    aes128_assist(__m128i temp1, __m128i temp2) {
-        __m128i temp3;
-
-        temp2 = _mm_shuffle_epi32(temp2 ,0xff);
-        temp3 = _mm_slli_si128(temp1, 0x4);
-        temp1 = _mm_xor_si128(temp1, temp3);
-        temp3 = _mm_slli_si128(temp3, 0x4);
-        temp1 = _mm_xor_si128(temp1, temp3);
-        temp3 = _mm_slli_si128(temp3, 0x4);
-        temp1 = _mm_xor_si128(temp1, temp3);
-        temp1 = _mm_xor_si128(temp1, temp2);
-
-        return temp1;
-    }
+    #define AES128_KEYROUND(i, rcon) \
+        key = ctx->key_schedule[i - 1]; \
+        gen = _mm_aeskeygenassist_si128(key, rcon); \
+        gen = _mm_shuffle_epi32(gen, 255); \
+        key = _mm_xor_si128(key, _mm_slli_si128(key, 4)); \
+        key = _mm_xor_si128(key, _mm_slli_si128(key, 4)); \
+        key = _mm_xor_si128(key, _mm_slli_si128(key, 4)); \
+        ctx->key_schedule[i] = _mm_xor_si128(key, gen)
 
 
     void
-    aes128_expand_key(const uint8_t *userkey, uint8_t *key) {
-        __m128i temp1, temp2;
-        __m128i *Key_Schedule = (__m128i*)key;
-        temp1 = _mm_loadu_si128((__m128i*)userkey);
+    aes128_init(AES128_Context* ctx, AES_User_Key user_key) {
+        __m128i key, gen;
+        ctx->key_schedule[0] = _mm_loadu_si128(reinterpret_cast<const __m128i *>(user_key.block.data));
 
-        // Generate key rounds:
-        Key_Schedule[0] = temp1;
+        AES128_KEYROUND(1, 0x01);
+        AES128_KEYROUND(2, 0x02);
+        AES128_KEYROUND(3, 0x04);
+        AES128_KEYROUND(4, 0x08);
+        AES128_KEYROUND(5, 0x10);
+        AES128_KEYROUND(6, 0x20);
+        AES128_KEYROUND(7, 0x40);
+        AES128_KEYROUND(8, 0x80);
+        AES128_KEYROUND(9, 0x1b);
+        AES128_KEYROUND(10, 0x36);
 
-        temp2 = _mm_aeskeygenassist_si128(temp1 ,0x1);
-        temp1 = aes128_assist(temp1, temp2);
-        Key_Schedule[1] = temp1;
-
-        temp2 = _mm_aeskeygenassist_si128(temp1,0x2);
-        temp1 = aes128_assist(temp1, temp2);
-        Key_Schedule[2] = temp1;
-
-        temp2 = _mm_aeskeygenassist_si128(temp1,0x4);
-        temp1 = aes128_assist(temp1, temp2);
-        Key_Schedule[3] = temp1;
-
-        temp2 = _mm_aeskeygenassist_si128(temp1,0x8);
-        temp1 = aes128_assist(temp1, temp2);
-        Key_Schedule[4] = temp1;
-
-        temp2 = _mm_aeskeygenassist_si128(temp1,0x10);
-        temp1 = aes128_assist(temp1, temp2);
-        Key_Schedule[5] = temp1;
-
-        temp2 = _mm_aeskeygenassist_si128(temp1,0x20);
-        temp1 = aes128_assist(temp1, temp2);
-        Key_Schedule[6] = temp1;
-
-        temp2 = _mm_aeskeygenassist_si128(temp1,0x40);
-        temp1 = aes128_assist(temp1, temp2);
-        Key_Schedule[7] = temp1;
-
-        temp2 = _mm_aeskeygenassist_si128(temp1,0x80);
-        temp1 = aes128_assist(temp1, temp2);
-        Key_Schedule[8] = temp1;
-
-        temp2 = _mm_aeskeygenassist_si128(temp1,0x1b);
-        temp1 = aes128_assist(temp1, temp2);
-        Key_Schedule[9] = temp1;
-
-        temp2 = _mm_aeskeygenassist_si128(temp1,0x36);
-        temp1 = aes128_assist(temp1, temp2);
-        Key_Schedule[10] = temp1;
+        ctx->key_schedule[11] = _mm_aesimc_si128(ctx->key_schedule[9]);
+        ctx->key_schedule[12] = _mm_aesimc_si128(ctx->key_schedule[8]);
+        ctx->key_schedule[13] = _mm_aesimc_si128(ctx->key_schedule[7]);
+        ctx->key_schedule[14] = _mm_aesimc_si128(ctx->key_schedule[6]);
+        ctx->key_schedule[15] = _mm_aesimc_si128(ctx->key_schedule[5]);
+        ctx->key_schedule[16] = _mm_aesimc_si128(ctx->key_schedule[4]);
+        ctx->key_schedule[17] = _mm_aesimc_si128(ctx->key_schedule[3]);
+        ctx->key_schedule[18] = _mm_aesimc_si128(ctx->key_schedule[2]);
+        ctx->key_schedule[19] = _mm_aesimc_si128(ctx->key_schedule[1]);
     }
 
+    void
+    aes128_encrypt(AES128_Context* ctx, void *pt, const void *ct) {
+        __m128i m = _mm_loadu_si128(reinterpret_cast<const __m128i *>(ct));
+
+        m = _mm_xor_si128(m, ctx->key_schedule[0]);
+        for (int i = 1; i < 10; ++i) {
+            m = _mm_aesenc_si128(m, ctx->key_schedule[i]);
+        }
+        m = _mm_aesenclast_si128(m, ctx->key_schedule[10]);
+
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(pt), m);
+    }
+
+    void
+    aes128_decrypt(AES128_Context* ctx, void *ct, const void *pt) {
+        __m128i m = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pt));
+
+        m = _mm_xor_si128(m, ctx->key_schedule[10]);
+        for (int i = 11; i < 20; ++i) {
+            m = _mm_aesdec_si128(m, ctx->key_schedule[i]);
+        }
+        m = _mm_aesdeclast_si128(m, ctx->key_schedule[0]);
+
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(ct), m);
+    }
 }

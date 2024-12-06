@@ -3,21 +3,27 @@
 
 int main() {
     using namespace sphinx;
-    using namespace std;
 
-    // Example usage of AES_128_Key_Expansion
-    uint8_t userkey[AES_BLOCK_SIZE] = {
-        'M', 'e', 'a', 'n', 'i', 'n', 'g', 'O',
-        'f', 'L', 'i', 'f', 'e', '0', '4', '2'
-    };
+    // Initialize AES context
+    AES128_Context ctx;
+    aes128_init(&ctx, "My key");
 
-    // 16 bytes per key, 11 keys:
-    uint8_t key_schedule[AES_BLOCK_SIZE*AES_KEY_SCHEDULE_COUNT];
+    // Test data (all 16 byte):
+    u8 original[BLOCK_SIZE] = "Hello, World!42";
+    u8 encrypted[BLOCK_SIZE];
+    u8 decrypted[BLOCK_SIZE];
 
-    // Expand the user key to a key schedule:
-    aes128_expand_key(userkey, key_schedule);
+    // Encrypt:
+    aes128_encrypt(&ctx, encrypted, original);
 
-    cout << "Done!\n";
+    // Decrypt:
+    aes128_decrypt(&ctx, decrypted, encrypted);
+
+    cout << "Decrypted:\n";
+    for (u8 c : decrypted) {
+        cout << c;
+    }
+    cout << "\n";
+
     return 0;
 }
-
