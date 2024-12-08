@@ -12,11 +12,8 @@ int main() {
         it grows perhaps the greater.)"
     );
 
-    AES_String cipher(text);
-    AES_String output(text.block_count*BLOCK_SIZE);
-
-    aes.encrypt(text, cipher);
-    aes.decrypt(cipher, output);
+    AES_String cipher = aes.encrypt(text);
+    AES_String output = aes.decrypt(cipher);
 
     cout << "Plain text: ";
     text.print();

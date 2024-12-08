@@ -6,7 +6,7 @@
 namespace sphinx {
 
     /*
-        For ease of use we allow user to construct the key from a string implicitly.
+    ## AES_User_Key: implementation
     */
     AES_User_Key::AES_User_Key(cstr_t key_string) {
         int key_length = cstr_length(key_string);
@@ -19,8 +19,84 @@ namespace sphinx {
         }
     }
 
+
     /*
-        Helpers for key expansion rounds:
+    ## AES_Block: implementation
+    */
+    u8&
+    AES_Block::operator[](int index) {
+        EXPECT(index < BLOCK_SIZE);
+        return data[index];
+    }
+
+    void
+    AES_Block::print() {
+    #if PROJECT_BUILD_DEBUG
+        cout << "[";
+        for (u8 c : data) cout << c;
+        cout << "]";
+    #endif
+    }
+
+    static inline int
+    byte_count_to_blocks(int byte_count) {
+        return (byte_count + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    }
+
+
+    /*
+    ## AES_String: implementation
+    */
+    AES_String::AES_String(cstr_t text) {
+        int length = cstr_length(text);
+        EXPECT(length > 0);
+
+        block_count = byte_count_to_blocks(length);
+        blocks      = new AES_Block[block_count];
+
+        EXPECT(blocks);
+        memcpy(blocks, text, length);
+    }
+
+    AES_String::AES_String(int size_in_bytes) {
+        EXPECT(size_in_bytes > 0);
+
+        block_count = byte_count_to_blocks(size_in_bytes);
+        blocks      = new AES_Block[block_count];
+
+        EXPECT(blocks);
+    }
+
+    AES_String::AES_String(const AES_String& other) {
+        block_count = other.block_count;
+        blocks      = new AES_Block[block_count];
+
+        EXPECT(blocks);
+        memcpy(blocks, other.blocks, block_count*BLOCK_SIZE);
+    }
+
+    AES_String::~AES_String() {
+        delete[] blocks;
+    }
+
+    int
+    AES_String::size_in_bytes() {
+        return block_count * BLOCK_SIZE;
+    }
+
+    void
+    AES_String::print() {
+    #ifdef PROJECT_BUILD_DEBUG
+        for (int i = 0; i < block_count; ++i) {
+            blocks[i].print();
+        }
+        cout << endl;
+    #endif
+    }
+
+
+    /*
+    ## AES128 ECB: implementation
     */
     #define AES128_KEYROUND(i, rcon) \
         key = key_schedule[i - 1]; \
@@ -32,7 +108,7 @@ namespace sphinx {
         key_schedule[i] = _mm_xor_si128(key, gen)
 
 
-    AES128::AES128(AES_User_Key user_key) {
+    AES128::AES128(const AES_User_Key& user_key) {
         __m128i key;
         __m128i gen;
 
@@ -64,41 +140,10 @@ namespace sphinx {
 
     AES128::~AES128() {}
 
-    void
-    AES128::encrypt(void* in, void* out) {
-        __m128i data_block = _mm_loadu_si128(reinterpret_cast<const __m128i*>(in));
+    AES_String
+    AES128::encrypt(AES_String& in) {
+        AES_String out(in.size_in_bytes());
 
-        data_block = _mm_xor_si128(data_block, key_schedule[0]);
-        for (int i = 1; i < 10; ++i) {
-            data_block = _mm_aesenc_si128(data_block, key_schedule[i]);
-        }
-        data_block = _mm_aesenclast_si128(data_block, key_schedule[10]);
-
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(out), data_block);
-    }
-
-    void
-    AES128::decrypt(void* in, void* out) {
-        __m128i data_block = _mm_loadu_si128(reinterpret_cast<const __m128i*>(in));
-        data_block = _mm_xor_si128(data_block, key_schedule[10]);
-
-    #ifdef SPHINX_PRECOMPUTE_REVERSE_KEYS
-        for (int i = 11; i > 20; --i) {
-            data_block = _mm_aesdec_si128(data_block, key_schedule[i]);
-        }
-    #else
-        for (int i = 9; i > 0; --i) {
-            data_block = _mm_aesdec_si128(data_block, _mm_aesimc_si128(key_schedule[i]));
-        }
-    #endif
-
-        data_block = _mm_aesdeclast_si128(data_block, key_schedule[0]);
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(out), data_block);
-    }
-
-
-    void
-    AES128::encrypt(AES_String& in, AES_String& out) {
         for (int i = 0; i < in.block_count; ++i) {
             AES_Block* b = &in.blocks[i];
             __m128i data_block = _mm_loadu_si128(reinterpret_cast<const __m128i*>(b));
@@ -111,10 +156,14 @@ namespace sphinx {
 
             _mm_storeu_si128(reinterpret_cast<__m128i*>(&out.blocks[i]), data_block);
         }
+
+        return out;
     }
 
-    void
-    AES128::decrypt(AES_String& in, AES_String& out) {
+    AES_String
+    AES128::decrypt(AES_String& in) {
+        AES_String out(in.size_in_bytes());
+
         for (int i = 0; i < in.block_count; ++i) {
             __m128i data_block = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&in.blocks[i]));
             data_block = _mm_xor_si128(data_block, key_schedule[10]);
@@ -132,5 +181,7 @@ namespace sphinx {
             data_block = _mm_aesdeclast_si128(data_block, key_schedule[0]);
             _mm_storeu_si128(reinterpret_cast<__m128i*>(&out.blocks[i]), data_block);
         }
+
+        return out;
     }
 }
