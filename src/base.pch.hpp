@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <iostream>
-#include <cstring>
 
 using namespace std;
 
@@ -26,8 +25,11 @@ using namespace std;
 
 namespace sphinx {
 
+    /*
+    ## Aliases
+    */
     typedef const char* cstr_t;
-    typedef uint8_t u8;
+    typedef uint8_t     u8;
 
     /*
         Terminate the program with a message of where it happened, used by { EXPECT, ERROR_IF } macro defined above.

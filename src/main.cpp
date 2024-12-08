@@ -5,8 +5,12 @@ int main() {
     using namespace sphinx;
 
     // Initialize AES context
-    AES128_Context ctx;
-    aes128_init(&ctx, "My key");
+    AES128 aes("My key");
+
+    AES_String text("Lorem Ipsum, sit Dolor Amet, bla bla bla, long string and stuff!");
+    AES_String text2(text);
+
+    text.print();
 
     // Test data (all 16 byte):
     u8 original[BLOCK_SIZE] = "Hello, World!42";
@@ -14,10 +18,10 @@ int main() {
     u8 decrypted[BLOCK_SIZE];
 
     // Encrypt:
-    aes128_encrypt(&ctx, encrypted, original);
+    aes.encrypt(original, encrypted);
 
     // Decrypt:
-    aes128_decrypt(&ctx, decrypted, encrypted);
+    aes.decrypt(encrypted, decrypted);
 
     cout << "Decrypted:\n";
     for (u8 c : decrypted) {
