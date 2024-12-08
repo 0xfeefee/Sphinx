@@ -124,10 +124,13 @@ namespace sphinx {
         encrypt(void* in, void* out);
 
         void
-        encrypt(AES_String* in, AES_String* out);
+        encrypt(AES_String& in, AES_String& out);
 
         void
         decrypt(void* in, void* out);
+
+        void
+        decrypt(AES_String& in, AES_String& out);
     };
 
 }

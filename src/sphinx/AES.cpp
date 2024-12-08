@@ -10,15 +10,13 @@ namespace sphinx {
     */
     AES_User_Key::AES_User_Key(cstr_t key_string) {
         int key_length = cstr_length(key_string);
-        ERROR_IF(key_length < 1 || key_length > 16, "Key of invalid length provided!");
+        EXPECT(key_length > 0 && key_length <= 16);
 
         memcpy(block.data, key_string, key_length);
         for (int i = key_length; i < BLOCK_SIZE; ++i) {
             int copy_index = (i-key_length) % key_length;
             block[i] = block[copy_index];
         }
-
-        block.print();
     }
 
     /*
@@ -96,5 +94,43 @@ namespace sphinx {
 
         data_block = _mm_aesdeclast_si128(data_block, key_schedule[0]);
         _mm_storeu_si128(reinterpret_cast<__m128i*>(out), data_block);
+    }
+
+
+    void
+    AES128::encrypt(AES_String& in, AES_String& out) {
+        for (int i = 0; i < in.block_count; ++i) {
+            AES_Block* b = &in.blocks[i];
+            __m128i data_block = _mm_loadu_si128(reinterpret_cast<const __m128i*>(b));
+
+            data_block = _mm_xor_si128(data_block, key_schedule[0]);
+            for (int i = 1; i < 10; ++i) {
+                data_block = _mm_aesenc_si128(data_block, key_schedule[i]);
+            }
+            data_block = _mm_aesenclast_si128(data_block, key_schedule[10]);
+
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(&out.blocks[i]), data_block);
+        }
+    }
+
+    void
+    AES128::decrypt(AES_String& in, AES_String& out) {
+        for (int i = 0; i < in.block_count; ++i) {
+            __m128i data_block = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&in.blocks[i]));
+            data_block = _mm_xor_si128(data_block, key_schedule[10]);
+
+        #ifdef SPHINX_PRECOMPUTE_REVERSE_KEYS
+            for (int i = 11; i > 20; --i) {
+                data_block = _mm_aesdec_si128(data_block, key_schedule[i]);
+            }
+        #else
+            for (int i = 9; i > 0; --i) {
+                data_block = _mm_aesdec_si128(data_block, _mm_aesimc_si128(key_schedule[i]));
+            }
+        #endif
+
+            data_block = _mm_aesdeclast_si128(data_block, key_schedule[0]);
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(&out.blocks[i]), data_block);
+        }
     }
 }
