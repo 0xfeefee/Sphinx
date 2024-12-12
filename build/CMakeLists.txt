@@ -3,7 +3,7 @@
 ##
 cmake_minimum_required(VERSION 3.20)
 project(Sphinx
-	VERSION 0.3.0
+	VERSION 0.4.0
 	LANGUAGES C CXX
 )
 
@@ -23,14 +23,15 @@ endif()
 ## Add: Dear ImGui
 add_library(lib_sphinx_ui
 	STATIC
+
 	# ImGui:
-	# ${VENDOR}/imgui-1.91.5/imgui.cpp
-	# ${VENDOR}/imgui-1.91.5/imgui_draw.cpp
-	# ${VENDOR}/imgui-1.91.5/imgui_widgets.cpp
-	# ${VENDOR}/imgui-1.91.5/imgui_tables.cpp
-	# ${VENDOR}/imgui-1.91.5/imgui_demo.cpp
-	# ${VENDOR}/imgui-1.91.5/backends/imgui_impl_opengl3.cpp
-	# ${VENDOR}/imgui-1.91.5/backends/imgui_impl_glfw.cpp
+	${VENDOR}/imgui-docking-1.91.6/imgui.cpp
+	${VENDOR}/imgui-docking-1.91.6/imgui_draw.cpp
+	${VENDOR}/imgui-docking-1.91.6/imgui_widgets.cpp
+	${VENDOR}/imgui-docking-1.91.6/imgui_tables.cpp
+	${VENDOR}/imgui-docking-1.91.6/imgui_demo.cpp
+	${VENDOR}/imgui-docking-1.91.6/imgui_impl_opengl3.cpp
+	${VENDOR}/imgui-docking-1.91.6/imgui_impl_glfw.cpp
 
 	# gl3w:
 	${VENDOR}/gl3w-master/src/gl3w.c
@@ -39,13 +40,16 @@ add_library(lib_sphinx_ui
 target_include_directories(lib_sphinx_ui
 	PUBLIC
 
-	${VENDOR}/imgui-1.91.5
+	${VENDOR}/imgui-docking-1.91.6
 	${VENDOR}/gl3w-master/include
 	${VENDOR}/Win64/glfw-3.4/include
 )
 
+find_package(OpenGL REQUIRED)
+
 target_link_libraries(lib_sphinx_ui
 	${VENDOR}/Win64/glfw-3.4/lib/glfw3.lib
+	OpenGL::GL
 )
 
 set(DLLS_TO_COPY

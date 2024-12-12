@@ -1,4 +1,4 @@
-# Sphinx (v0.2.0)
+# Sphinx (v0.4.0)
 A simple GUI password/secret manager written in C++.
 
 ## Idea
