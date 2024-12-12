@@ -21,6 +21,12 @@ namespace sphinx {
         We are using ECB, meaning we are processing in blocks, each block is 16 bytes for AES128.
     */
     static constexpr int BLOCK_SIZE = 16;
+#if SPHINX_PRECOMPUTE_REVERSE_KEY_SCHEDULE
+    static constexpr int KEY_ROUNDS = 20;
+#else
+    static constexpr int KEY_ROUNDS = 11;
+#endif
+
     struct AES_Block {
         u8 data[BLOCK_SIZE] = {};
 
@@ -67,7 +73,7 @@ namespace sphinx {
     };
 
     /*
-        Just a simple class which allows us to encrypt/decrypt with a master key - { Use_Key }
+        Just a simple class which allows us to encrypt/decrypt with a master key - { AES_User_Key }
     */
     class AES128 {
     private:
@@ -87,4 +93,4 @@ namespace sphinx {
         decrypt(AES_String& cipher_text);
     };
 
-}
+} // sphinx

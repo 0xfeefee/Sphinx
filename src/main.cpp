@@ -1,5 +1,6 @@
 
 #include <sphinx/AES.hpp>
+#include <sphinx/gui.hpp>
 
 int main() {
     using namespace sphinx;
@@ -15,12 +16,16 @@ int main() {
     AES_String cipher = aes.encrypt(text);
     AES_String output = aes.decrypt(cipher);
 
-    cout << "Plain text: ";
+    std::cout << "Plain text: ";
     text.print();
-    cout << "Cipher text: ";
+
+    std::cout << "Cipher text: ";
     cipher.print();
-    cout << "Output text: ";
+
+    std::cout << "Output text: ";
     output.print();
+
+    run_platform_window();
 
     return 0;
 }

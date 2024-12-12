@@ -10,7 +10,8 @@ project(Sphinx
 ## Basic configuration and variables:
 set(CMAKE_C_STANDARD   17)
 set(CMAKE_CXX_STANDARD 17)
-set(SRC 			   "../src")
+set(SRC 			   "${CMAKE_CURRENT_LIST_DIR}/../src")
+set(VENDOR             "${CMAKE_CURRENT_LIST_DIR}/../vendor")
 
 ## Check release mode:
 if (CMAKE_BUILD_TYPE MATCHES Debug)
@@ -19,10 +20,43 @@ else()
 	add_compile_definitions(PROJECT_BUILD_RELEASE=1)
 endif()
 
+## Add: Dear ImGui
+add_library(lib_sphinx_ui
+	STATIC
+	# ImGui:
+	# ${VENDOR}/imgui-1.91.5/imgui.cpp
+	# ${VENDOR}/imgui-1.91.5/imgui_draw.cpp
+	# ${VENDOR}/imgui-1.91.5/imgui_widgets.cpp
+	# ${VENDOR}/imgui-1.91.5/imgui_tables.cpp
+	# ${VENDOR}/imgui-1.91.5/imgui_demo.cpp
+	# ${VENDOR}/imgui-1.91.5/backends/imgui_impl_opengl3.cpp
+	# ${VENDOR}/imgui-1.91.5/backends/imgui_impl_glfw.cpp
+
+	# gl3w:
+	${VENDOR}/gl3w-master/src/gl3w.c
+)
+
+target_include_directories(lib_sphinx_ui
+	PUBLIC
+
+	${VENDOR}/imgui-1.91.5
+	${VENDOR}/gl3w-master/include
+	${VENDOR}/Win64/glfw-3.4/include
+)
+
+target_link_libraries(lib_sphinx_ui
+	${VENDOR}/Win64/glfw-3.4/lib/glfw3.lib
+)
+
+set(DLLS_TO_COPY
+	${VENDOR}/Win64/glfw-3.4/lib/glfw3.dll
+)
+
 ## Create an executable:
 add_executable(${PROJECT_NAME}
 	${SRC}/main.cpp
 	${SRC}/sphinx/AES.cpp
+	${SRC}/sphinx/gui.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -33,6 +67,11 @@ target_include_directories(${PROJECT_NAME}
 target_precompile_headers(${PROJECT_NAME}
 	PRIVATE
 	${SRC}/base.pch.hpp
+)
+
+target_link_libraries(${PROJECT_NAME}
+	PRIVATE
+	lib_sphinx_ui
 )
 
 ## Make sure to enable AES intrinsics:

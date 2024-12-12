@@ -1,6 +1,8 @@
 
 // Implements:
 #include <sphinx/AES.hpp>
+
+// Dependencies:
 #include <wmmintrin.h>
 
 namespace sphinx {
@@ -32,9 +34,9 @@ namespace sphinx {
     void
     AES_Block::print() {
     #if PROJECT_BUILD_DEBUG
-        cout << "[";
-        for (u8 c : data) cout << c;
-        cout << "]";
+        std::cout << "[";
+        for (u8 c : data) std::cout << c;
+        std::cout << "]";
     #endif
     }
 
@@ -90,7 +92,7 @@ namespace sphinx {
         for (int i = 0; i < block_count; ++i) {
             blocks[i].print();
         }
-        cout << endl;
+        std::cout << std::endl;
     #endif
     }
 
@@ -184,4 +186,5 @@ namespace sphinx {
 
         return out;
     }
-}
+
+} // sphinx

@@ -4,8 +4,6 @@
 #include <cstdint>
 #include <iostream>
 
-using namespace std;
-
 /*
 ## Utility macros
 
@@ -63,4 +61,5 @@ namespace sphinx {
 
         return length;
     }
-}
+
+} // sphinx
