@@ -77,11 +77,7 @@ namespace sphinx {
     */
     class AES128 {
     private:
-    #ifdef SPHINX_PRECOMPUTE_INVERSE_KEY_SCHEDULE
-        m128 key_schedule[20];
-    #else
-        m128 key_schedule[11];
-    #endif
+        m128 key_schedule[KEY_ROUNDS];
     public:
         AES128(const AES_User_Key& user_key);
         ~AES128();

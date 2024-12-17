@@ -61,6 +61,7 @@ add_executable(${PROJECT_NAME}
 	${SRC}/main.cpp
 	${SRC}/sphinx/AES.cpp
 	${SRC}/sphinx/gui.cpp
+	${SRC}/sphinx/sphinx.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

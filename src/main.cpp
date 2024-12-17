@@ -2,6 +2,31 @@
 #include <sphinx/AES.hpp>
 #include <sphinx/gui.hpp>
 
+#include <imgui.h>
+
+namespace sphinx {
+    class Main_Scene final : public Base_Scene {
+    public:
+        Main_Scene() {}
+        ~Main_Scene() {}
+
+        void
+        init() {
+            ImGui::StyleColorsClassic();
+        }
+
+        bool
+        run(f64 delta_time) {
+            return window("Hello, World!");
+        }
+
+        void
+        cleanup() {
+            std::cout << "Cleanup!\n";
+        }
+    };
+}
+
 int main() {
     using namespace sphinx;
 
@@ -25,7 +50,8 @@ int main() {
     std::cout << "Output text: ";
     output.print();
 
-    run_platform_window();
+    Unique<Main_Scene> main_scene = std::make_unique<Main_Scene>();
+    run_platform_window(std::move(main_scene));
 
     return 0;
 }

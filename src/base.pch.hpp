@@ -3,6 +3,9 @@
 
 #include <cstdint>
 #include <iostream>
+#include <string>
+#include <vector>
+#include <memory>
 
 /*
 ## Utility macros
@@ -21,6 +24,14 @@
     #define ERROR_IF(condition, ...)
 #endif
 
+
+template <typename T>
+using Unique = std::unique_ptr<T>;
+
+template <typename T>
+using Shared = std::shared_ptr<T>;
+
+
 namespace sphinx {
 
     /*
@@ -28,6 +39,7 @@ namespace sphinx {
     */
     typedef const char* cstr_t;
     typedef uint8_t     u8;
+    typedef double      f64;
 
     /*
         Terminate the program with a message of where it happened, used by { EXPECT, ERROR_IF } macro defined above.

@@ -3,14 +3,8 @@
 
 namespace sphinx {
 
-    class UI_Root {
-    public:
-        virtual void
-        run();
-    };
-
     void
-    run_platform_window();
+    run_platform_window(Unique<Base_Scene> scene);
 
     int
     main_dockspace(const char* name);
