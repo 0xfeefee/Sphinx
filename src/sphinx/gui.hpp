@@ -3,14 +3,39 @@
 
 namespace sphinx {
 
-    void
-    run_platform_window(Unique<Base_Scene> scene);
+    /*
+        User implements the scene.
+    */
+    class Base_Scene {
+    public:
+        Base_Scene()          = default;
+        virtual ~Base_Scene() = default;
 
-    int
-    main_dockspace(const char* name);
+        virtual void
+        init() = 0;
 
-    bool
-    window(const char* title, bool* is_open = nullptr);
+        virtual bool
+        run(f64 delta_time) = 0;
 
+        virtual void
+        cleanup() = 0;
+    };
 
-} // sphinx
+    /*
+        Applications runs the user scene.
+    */
+    struct Context;
+    class Application final {
+    private:
+        Unique<Base_Scene> scene;
+        Unique<Context>    context;
+
+    public:
+        Application(Unique<Base_Scene> scene);
+        ~Application();
+
+        void
+        run();
+    };
+
+}

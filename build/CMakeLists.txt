@@ -60,8 +60,8 @@ set(DLLS_TO_COPY
 add_executable(${PROJECT_NAME}
 	${SRC}/main.cpp
 	${SRC}/sphinx/AES.cpp
-	${SRC}/sphinx/gui.cpp
-	${SRC}/sphinx/sphinx.cpp
+	${SRC}/sphinx/GUI.cpp
+	${SRC}/scene/Password_Manager.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

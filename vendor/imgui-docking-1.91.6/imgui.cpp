@@ -3906,6 +3906,11 @@ ImGuiContext* ImGui::CreateContext(ImFontAtlas* shared_font_atlas)
     ImGuiContext* ctx = IM_NEW(ImGuiContext)(shared_font_atlas);
     SetCurrentContext(ctx);
     Initialize();
+
+#ifdef IMGUI_USE_EXTENDED
+    ImGui_Extended::initialize_context();
+#endif
+
     if (prev_ctx != NULL)
         SetCurrentContext(prev_ctx); // Restore previous context if any, else keep new one.
     return ctx;
@@ -3916,6 +3921,11 @@ void ImGui::DestroyContext(ImGuiContext* ctx)
     ImGuiContext* prev_ctx = GetCurrentContext();
     if (ctx == NULL) //-V1051
         ctx = prev_ctx;
+
+#ifdef IMGUI_USE_EXTENDED
+    ImGui_Extended::destroy_context();
+#endif
+
     SetCurrentContext(ctx);
     Shutdown();
     SetCurrentContext((prev_ctx != ctx) ? prev_ctx : NULL);
@@ -5908,6 +5918,10 @@ void ImGui::Render()
 {
     ImGuiContext& g = *GImGui;
     IM_ASSERT(g.Initialized);
+
+#ifdef IMGUI_USE_EXTENDED
+    ImGui_Extended::close_last_window();
+#endif
 
     if (g.FrameCountEnded != g.FrameCount)
         EndFrame();
@@ -19761,6 +19775,8 @@ ImGuiID ImGui::DockBuilderSplitNode(ImGuiID id, ImGuiDir split_dir, float size_r
     req.DockSplitOuter = false;
     DockContextProcessDock(&g, &req);
 
+    printf("Split ratio: %f\n", req.DockSplitRatio);
+
     ImGuiID id_at_dir = node->ChildNodes[(split_dir == ImGuiDir_Left || split_dir == ImGuiDir_Up) ? 0 : 1]->ID;
     ImGuiID id_at_opposite_dir = node->ChildNodes[(split_dir == ImGuiDir_Left || split_dir == ImGuiDir_Up) ? 1 : 0]->ID;
     if (out_id_at_dir)
@@ -21628,6 +21644,104 @@ void ImGui::ShowMetricsWindow(bool* p_open)
 
     End();
 }
+
+
+/*
+## Extension: implementation
+*/
+#ifdef IMGUI_USE_EXTENDED
+namespace ImGui_Extended {
+    using namespace ImGui;
+
+    /*
+        State relevant only to the extension functions.
+    */
+    struct ImGui_Extension_Context {
+        bool last_window_open;
+        ImGuiWindowFlags window_flags;
+
+        ImGui_Extension_Context():
+            last_window_open(false),
+            window_flags(ImGuiWindowFlags_None) {
+        }
+    };
+
+    static ImGui_Extension_Context* extension = nullptr;
+
+    void
+    close_last_window() {
+        if (extension->last_window_open == true) {
+            End();
+            extension->last_window_open = false;
+        }
+    }
+
+    void
+    initialize_context() {
+        extension = new ImGui_Extension_Context();
+    }
+
+    void
+    destroy_context() {
+        delete extension;
+    }
+
+    void
+    set_window_flags(ImGuiWindowFlags flags) {
+        extension->window_flags = flags;
+    }
+
+    int
+    main_dockspace(const char* dockspace_window_name) {
+        static ImGuiViewport* viewport = GetMainViewport();
+        IM_ASSERT(viewport != NULL);
+
+        // Set the size and position of the new window:
+        SetNextWindowViewport(viewport->ID);
+        SetNextWindowSize(viewport->WorkSize);
+        SetNextWindowPos({0,0});
+
+        // Push the custom background/padding style:
+        PushStyleColor(ImGuiCol_WindowBg, {0,0,0,255});
+
+        // Dock-space window: We also give it a custom flag identifier
+        ImGuiWindowFlags dockspace_window_flags = ImGuiWindowFlags_NoDocking |
+                                                ImGuiWindowFlags_NoTitleBar |
+                                                ImGuiWindowFlags_NoMove |
+                                                ImGuiWindowFlags_NoResize |
+                                                ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                                ImGuiWindowFlags_NoNavFocus;
+
+        // Run the dock-space window:
+        ImGuiID dockspace_id = 0;
+        Begin(dockspace_window_name, NULL, dockspace_window_flags); {
+            PopStyleColor();
+
+            // Run the dockspace using main window as host:
+            ImGuiID dockspace_window_id = GetID(dockspace_window_name);
+            dockspace_id = DockSpace(dockspace_window_id, {0.0f, 0.0f}, ImGuiDockNodeFlags_NoTabBar);
+
+            End();
+        }
+
+        return dockspace_id;
+    }
+
+    bool
+    window(const char* title, bool* is_open) {
+        close_last_window();
+
+        bool window = false;
+        if (is_open == NULL || (is_open && *is_open)) {
+            window = Begin(title, is_open, extension->window_flags);
+            extension->last_window_open = true;
+        }
+
+        return window;
+    }
+
+}
+#endif // USE_IMGUI_EXTENDED
 
 void ImGui::DebugBreakClearData()
 {
