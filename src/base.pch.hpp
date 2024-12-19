@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <thread>
+#include <mutex>
+#include <unordered_map>
 
 /*
 ## Utility macros
@@ -31,7 +34,6 @@ using Unique = std::unique_ptr<T>;
 template <typename T>
 using Shared = std::shared_ptr<T>;
 
-
 namespace sphinx {
 
     /*
@@ -39,6 +41,7 @@ namespace sphinx {
     */
     typedef const char* cstr_t;
     typedef uint8_t     u8;
+    typedef int16_t     s16;
     typedef double      f64;
 
     /*

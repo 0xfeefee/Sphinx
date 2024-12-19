@@ -15,6 +15,9 @@ namespace ImGui_Extended {
     bool
     window(const char* title, bool* is_open = nullptr);
 
+    void
+    dock_to_center(const char* window, ImGuiID dock_node_id);
+
     /*
     	Internals, do not use directly!
     */

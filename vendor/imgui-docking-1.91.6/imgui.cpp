@@ -21691,6 +21691,14 @@ namespace ImGui_Extended {
         extension->window_flags = flags;
     }
 
+    void
+    dock_to_center(const char *window, ImGuiID dock_node_id) {
+        ImGui::DockBuilderRemoveNode(dock_node_id);
+        ImGui::DockBuilderAddNode(dock_node_id, ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderDockWindow(window, dock_node_id);
+        ImGui::DockBuilderFinish(dock_node_id);
+    }
+
     int
     main_dockspace(const char* dockspace_window_name) {
         static ImGuiViewport* viewport = GetMainViewport();

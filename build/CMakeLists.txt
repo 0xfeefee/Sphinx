@@ -61,12 +61,14 @@ add_executable(${PROJECT_NAME}
 	${SRC}/main.cpp
 	${SRC}/sphinx/AES.cpp
 	${SRC}/sphinx/GUI.cpp
+	${SRC}/sphinx/Image.cpp
 	${SRC}/scene/Password_Manager.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
 	PUBLIC
 	${SRC}
+	${VENDOR}/stb
 )
 
 target_precompile_headers(${PROJECT_NAME}

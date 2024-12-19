@@ -4,6 +4,7 @@
 
 // Dependencies:
 #include <sphinx/sphinx.hpp>
+#include <sphinx/Image.hpp>
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -22,12 +23,7 @@ namespace sphinx {
 
         int dockspace_id = im::main_dockspace("##dockspace");
         im::window("Main");
-
-        // Dock to the center:
-        ImGui::DockBuilderRemoveNode(dockspace_id);
-        ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-        ImGui::DockBuilderDockWindow("Main", dockspace_id);
-        ImGui::DockBuilderFinish(dockspace_id);
+        im::dock_to_center("Main", dockspace_id);
     }
 
     bool
@@ -35,6 +31,9 @@ namespace sphinx {
         im::main_dockspace("##dockspace");
         if (im::window("Main")) {
             ImGui::Text("Hello!");
+            if (ImGui::Button("Load Image")) {
+                Image i = load_image("bin/Iceland.png");
+            }
         }
 
         return true;
