@@ -1,3 +1,5 @@
+
+#pragma once
 /*
 # AES encryption
 
@@ -48,6 +50,7 @@ namespace sphinx {
     struct AES_User_Key {
         AES_Block block;
 
+        AES_User_Key();
         AES_User_Key(cstr_t key_string);
     };
 

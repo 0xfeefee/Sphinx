@@ -42,6 +42,8 @@ namespace sphinx {
     typedef const char* cstr_t;
     typedef uint8_t     u8;
     typedef int16_t     s16;
+    typedef int32_t     s32;
+    typedef float       f32;
     typedef double      f64;
 
     /*

@@ -21,6 +21,8 @@ namespace sphinx {
         }
     }
 
+    AES_User_Key::AES_User_Key() {}
+
 
     /*
     ## AES_Block: implementation

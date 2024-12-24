@@ -4,12 +4,15 @@
 
 namespace sphinx {
 
-    struct Password_Manager_Context;
+    struct Scene_Context;
 
     class Password_Manager final : public Base_Scene {
+    private:
+        Unique<Scene_Context> context;
+
     public:
-        Password_Manager() {}
-        ~Password_Manager() {}
+        Password_Manager();
+        ~Password_Manager();
 
         void
         init();
