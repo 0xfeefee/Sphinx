@@ -3,6 +3,7 @@
 .w_scripts
 bin/*
 .clangd
+.tmy
 
 ## Exceptions
 !.gitkeep

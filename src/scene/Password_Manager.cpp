@@ -16,7 +16,7 @@ namespace sphinx {
     /*
         Helper function to draw an image to the screen.
     */
-    void
+    static void
     draw_image(const std::string& name, ImVec2 max_dimensions = {0, 0}) {
         const Image& image = get_image(name);
         if (image.is_ready_to_render()) {
@@ -55,6 +55,29 @@ namespace sphinx {
                 IM_COL32(100, 150, 50, 255),
                 IM_COL32(255, 50, 100, 255)
             );
+        }
+    }
+
+    static void
+    image_store_msg(const std::string& name, char* master_key_buffer, char* content_buffer) {
+        Image& image = get_image(name);
+
+        if (image.is_ready_to_write()) {
+            // Just test it out quickly!
+            int len = cstr_length(master_key_buffer);
+            image.try_write(Image_Message(len, (u8*)master_key_buffer), name);
+        }
+    }
+
+    static void
+    image_load_msg(const std::string& name, char* master_key_buffer, char* content_buffer) {
+        Image& image = get_image(name);
+
+        if (image.is_ready_to_write()) {
+            Image_Message msg(0, nullptr);
+            image.try_read(msg);
+
+            printf("Message: (%s)\n", msg.data);
         }
     }
 
@@ -104,8 +127,9 @@ namespace sphinx {
         std::vector<std::string> images;
         bool                     hide_key_input_text;
         char                     key_input_buffer[BLOCK_SIZE];
+        char                     content_input_buffer[BLOCK_SIZE*4];
 
-        Scene_Context(): key_input_buffer{} {
+        Scene_Context(): key_input_buffer{}, content_input_buffer{} {
             images.reserve(32);
         }
     };
@@ -151,6 +175,25 @@ namespace sphinx {
                     context->hide_key_input_text ? ImGuiInputTextFlags_Password : ImGuiInputTextFlags_None
                 );
                 ImGui::SameLine();
+                ImGui::InputText(
+                    "##content_input",
+                    context->content_input_buffer,
+                    BLOCK_SIZE*4
+                );
+                if (ImGui::Button("Store")) {
+                    image_store_msg(
+                        "bin/Iceland.png",
+                        context->key_input_buffer,
+                        context->content_input_buffer
+                    );
+                }
+                if (ImGui::Button("Load")) {
+                    image_load_msg(
+                        "bin/Iceland.png",
+                        context->key_input_buffer,
+                        context->content_input_buffer
+                    );
+                }
                 ImGui::Separator();
             }
 

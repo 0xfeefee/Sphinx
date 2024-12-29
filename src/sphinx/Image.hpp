@@ -35,7 +35,7 @@ namespace sphinx {
         is_ready_to_render() const;
 
         bool
-        try_write(const Image_Message& message);
+        try_write(const Image_Message& message, const std::string& output_name);
 
         bool
         try_read(Image_Message& msg_buf);
@@ -48,7 +48,7 @@ namespace sphinx {
         drawn in the UI, however this operation is done on the main thread since only main thread
         has the GL context.
     */
-    const Image&
+    Image&
     get_image(std::string image_file_path);
 
 }

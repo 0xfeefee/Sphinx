@@ -69,7 +69,7 @@ namespace sphinx {
         ~AES_String();
 
         int
-        size_in_bytes();
+        size_in_bytes() const;
 
         void
         print();
@@ -85,11 +85,13 @@ namespace sphinx {
         AES128(const AES_User_Key& user_key);
         ~AES128();
 
+        [[nodiscard]]
         AES_String
-        encrypt(AES_String& plain_text);
+        encrypt(const AES_String& plain_text) const;
 
+        [[nodiscard]]
         AES_String
-        decrypt(AES_String& cipher_text);
+        decrypt(const AES_String& cipher_text) const;
     };
 
 } // sphinx

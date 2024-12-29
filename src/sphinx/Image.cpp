@@ -5,6 +5,8 @@
 // Dependencies:
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #include <GL/gl3w.h>
 
@@ -27,10 +29,10 @@ namespace sphinx {
     }
 
     bool
-    Image::try_write(const Image_Message& message) {
+    Image::try_write(const Image_Message& message, const std::string& output_name) {
         // Total number of bits we need to store this message:
         int message_length_bits = message.count * 8;
-        ERROR_IF(message_length_bits + MESSAGE_HEADER_SIZE > size);
+        ERROR_IF(message_length_bits + MESSAGE_HEADER_SIZE > width*height*32);
 
         // Write the header: { MESSAGE_SIZE }
         for (int i = 0; i < MESSAGE_HEADER_SIZE; ++i) {
@@ -42,6 +44,18 @@ namespace sphinx {
             data[i + MESSAGE_HEADER_SIZE] &= 0xFE; // Clear the LSB
             data[i + MESSAGE_HEADER_SIZE] |= (message.data[i/8] >> ((message_length_bits - 1 - i) % 8)) & 1;
         }
+
+        // @todo: separate thread
+        stbi_write_png(
+            output_name.c_str(),
+            width,
+            height,
+            4, // RGBA (png assumed!)
+            (void*)data,
+            width*4
+        );
+
+        printf("Successfully wrote: (%s) to (%s)!\n", message.data, output_name.c_str());
 
         return true; // All good!
     }
@@ -56,33 +70,19 @@ namespace sphinx {
         }
 
         EXPECT(message_size > 0);
-        printf("There's a message hidden here, it has exactly: %d bits", message_size)  ;
+        printf("There's a message hidden here, it has exactly: %d bits, or %d bytes\n", message_size, message_size/8);
+
+        char* buffer = (char*)malloc(sizeof(char) * message_size + 1);
+        for (int i = 0; i < message_size; ++i) {
+            buffer[i / 8] = (buffer[i / 8] << 1) | (data[i + MESSAGE_HEADER_SIZE] & 1);
+        }
+
+        buffer[message_size / 8] = '\0';
+        msg_buf.data  = (u8*)buffer;
+        msg_buf.count = message_size / 8;
 
         return true;
     }
-
-    // image_decode_message(image_data* i)
-    // {
-    //     u32 message_size = 0;
-    //     u8* image_data = i->data;
-
-    //     for (u8 i = 0; i < SG_HEADER_SIZE; i++) {
-    //         message_size = (message_size << 1) | (image_data[i] & 1);
-    //     }
-
-    //     if (message_size > 256 * 8)
-    //     {
-    //         return NULL;
-    //     }
-
-    //     char* buffer = (char*)malloc(sizeof(char) * message_size + 1);
-    //     for (u32 i = 0; i < message_size; i++) {
-    //         buffer[i / 8] = (buffer[i / 8] << 1) | (image_data[i + SG_HEADER_SIZE] & 1);
-    //     }
-
-    //     buffer[message_size / 8] = '\0';
-    //     return buffer;
-    // }
 
     /*
         Images are loaded from disk in a separate thread, when user wants to load an image
@@ -235,7 +235,7 @@ namespace sphinx {
     }
 
 
-    const Image&
+    Image&
     get_image(std::string image_file_path) {
         Image& i = get_loader()->add_request_image(image_file_path);
 

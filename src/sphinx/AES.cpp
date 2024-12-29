@@ -84,7 +84,7 @@ namespace sphinx {
     }
 
     int
-    AES_String::size_in_bytes() {
+    AES_String::size_in_bytes() const {
         return block_count * BLOCK_SIZE;
     }
 
@@ -145,7 +145,7 @@ namespace sphinx {
     AES128::~AES128() {}
 
     AES_String
-    AES128::encrypt(AES_String& in) {
+    AES128::encrypt(const AES_String& in) const {
         AES_String out(in.size_in_bytes());
 
         for (int i = 0; i < in.block_count; ++i) {
@@ -165,7 +165,7 @@ namespace sphinx {
     }
 
     AES_String
-    AES128::decrypt(AES_String& in) {
+    AES128::decrypt(const AES_String& in) const {
         AES_String out(in.size_in_bytes());
 
         for (int i = 0; i < in.block_count; ++i) {
