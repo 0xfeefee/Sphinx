@@ -63,9 +63,16 @@ namespace sphinx {
         Image& image = get_image(name);
 
         if (image.is_ready_to_write()) {
+            // Temporary: encrypt
+            AES128 aes(master_key_buffer);
+            AES_String content = content_buffer;
+            AES_String encrypted = aes.encrypt(content);
+
             // Just test it out quickly!
-            int len = cstr_length(master_key_buffer);
-            image.try_write(Image_Message(len, (u8*)master_key_buffer), name);
+            u8* encrypted_content_data   = encrypted.blocks[0].data;
+            int encrypted_content_length = encrypted.size_in_bytes();
+
+            image.try_write(Image_Message(encrypted_content_length, encrypted_content_data), name);
         }
     }
 
@@ -77,7 +84,12 @@ namespace sphinx {
             Image_Message msg(0, nullptr);
             image.try_read(msg);
 
-            printf("Message: (%s)\n", msg.data);
+            // Temporary: decrypt:
+            AES128 aes(master_key_buffer);
+            AES_String encrypted_content((char*)msg.data);
+            AES_String decrypted = aes.decrypt(encrypted_content);
+
+            printf("Message: (%s)\n", decrypted.blocks[0].data);
         }
     }
 
@@ -119,11 +131,10 @@ namespace sphinx {
     */
     struct Image_Data {
         std::string image_name;
-        std::string descriptionj;
+        std::string description;
     };
 
     struct Scene_Context {
-        AES_User_Key             user_key;
         std::vector<std::string> images;
         bool                     hide_key_input_text;
         char                     key_input_buffer[BLOCK_SIZE];

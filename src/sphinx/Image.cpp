@@ -16,7 +16,7 @@
 
 namespace sphinx {
 
-    constexpr int MESSAGE_HEADER_SIZE = 8;
+    constexpr int MESSAGE_HEADER_SIZE = 16;
 
     bool
     Image::is_ready_to_render() const {
@@ -32,7 +32,7 @@ namespace sphinx {
     Image::try_write(const Image_Message& message, const std::string& output_name) {
         // Total number of bits we need to store this message:
         int message_length_bits = message.count * 8;
-        ERROR_IF(message_length_bits + MESSAGE_HEADER_SIZE > width*height*32);
+        ERROR_IF(message_length_bits + MESSAGE_HEADER_SIZE > width*height);
 
         // Write the header: { MESSAGE_SIZE }
         for (int i = 0; i < MESSAGE_HEADER_SIZE; ++i) {
@@ -56,7 +56,6 @@ namespace sphinx {
         );
 
         printf("Successfully wrote: (%s) to (%s)!\n", message.data, output_name.c_str());
-
         return true; // All good!
     }
 
@@ -124,7 +123,6 @@ namespace sphinx {
         EXPECT(image.width > 0 && image.height > 0);
         image.id = request.image_id;
 
-        std::cout << "Loaded: " << image.width << "x" << image.height << " - " << request.file_name << std::endl;
         return image;
     }
 
