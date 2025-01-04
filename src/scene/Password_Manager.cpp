@@ -8,6 +8,8 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <file_dialog/ImGuiFileDialog.h>
+
 namespace im = ImGui_Extended;
 
 
@@ -97,35 +99,6 @@ namespace sphinx {
         return a < b ? a : b;
     }
 
-    void
-    show_grid_layout(int columns, ImVec2 itemSize, int itemCount) {
-        float contentWidth = ImGui::GetContentRegionAvail().x;
-        float spacing = ImGui::GetStyle().ItemSpacing.x;
-        int itemsPerRow = minx(columns, static_cast<int>((contentWidth + spacing) / (itemSize.x + spacing)));
-        float totalWidth = itemsPerRow * itemSize.x + (itemsPerRow - 1) * spacing;
-        float offsetX = (contentWidth - totalWidth) / 2.0f;
-
-        if (offsetX > 0.0f)
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
-
-        for (int i = 0; i < itemCount; i++) {
-            if (i > 0 && i % itemsPerRow == 0) {
-                ImGui::NewLine();
-                if (offsetX > 0.0f) {
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
-                }
-            }
-
-            ImGui::PushID(i);
-            ImGui::Button("Item", itemSize);
-            ImGui::PopID();
-
-            if ((i + 1) % itemsPerRow != 0) {
-                ImGui::SameLine();
-            }
-        }
-    }
-
     /*
         We can add a magic header of sorts to make sure a thing works.
     */
@@ -163,10 +136,6 @@ namespace sphinx {
         int dockspace_id = im::main_dockspace("##dockspace");
         im::window("Main");
         im::dock_to_center("Main", dockspace_id);
-
-        for (int i = 0; i < 32; ++i) {
-            context->images.push_back("bin/Iceland.png");
-        }
     }
 
     bool
@@ -205,7 +174,27 @@ namespace sphinx {
                         context->content_input_buffer
                     );
                 }
+                if (ImGui::Button("Dialog")) {
+                    IGFD::FileDialogConfig config;
+                    config.path = ".";
+
+                    ImGui::SetNextWindowSize({500, 500});
+                    ImGuiFileDialog::Instance()->OpenDialog(
+                        "#image_picker",
+                        "Choose file",
+                        ".png",
+                        config
+                    );
+                }
                 ImGui::Separator();
+
+                if (ImGuiFileDialog::Instance()->Display("#image_picker")) {
+                    if (ImGuiFileDialog::Instance()->IsOk()) {
+                        context->images.push_back(ImGuiFileDialog::Instance()->GetFilePathName());
+                    }
+
+                    ImGuiFileDialog::Instance()->Close();
+                }
             }
 
             static ImVec2 image_size = { 200, 200 };
@@ -216,7 +205,7 @@ namespace sphinx {
 
             for (const auto& image_name: context->images) {
                 if (current_width > 0.0f) {
-                    if (current_width < container_width) {
+                    if (current_width + image_size.x < container_width) {
                         ImGui::SameLine();
                     } else {
                         current_width = 0.0f;
@@ -226,8 +215,6 @@ namespace sphinx {
                 draw_image(image_name, image_size);
                 current_width += 210;
             }
-
-            show_grid_layout(8, {300, 100}, 47);
         }
 
         return true;

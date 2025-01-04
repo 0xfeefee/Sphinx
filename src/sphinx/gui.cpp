@@ -11,6 +11,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include <file_dialog/ImGuiFileDialog.h>
+
 namespace im = ImGui_Extended;
 
 namespace sphinx {
