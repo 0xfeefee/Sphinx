@@ -88,6 +88,16 @@ namespace sphinx {
         return block_count * BLOCK_SIZE;
     }
 
+    u8*
+    AES_String::byte_ptr() const {
+        return reinterpret_cast<u8*>(blocks);
+    }
+
+    std::string
+    AES_String::to_string() {
+        return std::string(reinterpret_cast<char*>(blocks), block_count * BLOCK_SIZE);
+    }
+
     void
     AES_String::print() {
     #ifdef PROJECT_BUILD_DEBUG
@@ -110,7 +120,6 @@ namespace sphinx {
         key = _mm_xor_si128(key, _mm_slli_si128(key, 4)); \
         key = _mm_xor_si128(key, _mm_slli_si128(key, 4)); \
         key_schedule[i] = _mm_xor_si128(key, gen)
-
 
     AES128::AES128(const AES_User_Key& user_key) {
         __m128i key;

@@ -21692,7 +21692,7 @@ namespace ImGui_Extended {
     }
 
     void
-    dock_to_center(const char *window, ImGuiID dock_node_id) {
+    dock_to_center(const char* window, ImGuiID dock_node_id) {
         ImGui::DockBuilderRemoveNode(dock_node_id);
         ImGui::DockBuilderAddNode(dock_node_id, ImGuiDockNodeFlags_DockSpace);
         ImGui::DockBuilderDockWindow(window, dock_node_id);
@@ -21710,7 +21710,7 @@ namespace ImGui_Extended {
         SetNextWindowPos({0,0});
 
         // Push the custom background/padding style:
-        PushStyleColor(ImGuiCol_WindowBg, {0,0,0,255});
+        PushStyleColor(ImGuiCol_WindowBg, {.2f, .4f, .8f, 1.0f});
 
         // Dock-space window: We also give it a custom flag identifier
         ImGuiWindowFlags dockspace_window_flags = ImGuiWindowFlags_NoDocking |

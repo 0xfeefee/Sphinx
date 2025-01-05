@@ -71,6 +71,12 @@ namespace sphinx {
         int
         size_in_bytes() const;
 
+        u8*
+        byte_ptr() const;
+
+        std::string
+        to_string();
+
         void
         print();
     };
@@ -81,7 +87,9 @@ namespace sphinx {
     class AES128 {
     private:
         m128 key_schedule[KEY_ROUNDS];
+
     public:
+        AES128();
         AES128(const AES_User_Key& user_key);
         ~AES128();
 
