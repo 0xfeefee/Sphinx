@@ -278,6 +278,7 @@ namespace sphinx {
             if (is_key_valid()) {
                 scene_status = Scene_Status::MAIN;
                 errors.clear();
+                load_from_disk();
             } else {
                 errors.push_back("Invalid Key!");
             }
@@ -302,8 +303,31 @@ namespace sphinx {
         }
 
         void
+        write_images_to_disk() {
+            std::ofstream out_file(state_file_path.string());
+            EXPECT(out_file);
+
+            for (const std::string& image_name : images) {
+                out_file << image_name << ";";
+            }
+
+            out_file.close();
+        }
+
+        void
         load_from_disk() {
-            EXPECT(state_exists_on_disk());
+            if (!state_exists_on_disk()) {
+                return;
+            }
+
+            std::string state = from_disk(state_file_path.string());
+            size_t start      = 0;
+            size_t end        = 0;
+
+            while ((end = state.find(';', start)) != std::string::npos) {
+                images.emplace_back(state.substr(start, end - start));
+                start = end + 1;
+            }
         }
     };
 
@@ -404,10 +428,6 @@ namespace sphinx {
                 ImGui::Text("==Main==");
                 ImGui::Text("Welcome!");
 
-                // if (ImGui::Button("Open Modal")) {
-                //    ImGui::OpenPopup("##modal");
-                // }
-
                 // Add image button:
                 if (ImGui::Button("Add")) {
                     IGFD::FileDialogConfig config;
@@ -463,7 +483,7 @@ namespace sphinx {
 
     void
     Password_Manager::cleanup() {
-
+        context->write_images_to_disk();
     }
 
 }

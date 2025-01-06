@@ -158,7 +158,7 @@ namespace sphinx {
                 // If request is valid, process it:
                 if (request.image_id >= 0) {
                     Image image = process_image_load_request(request);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(4096));
+                    // std::this_thread::sleep_for(std::chrono::milliseconds(4096));
 
                     // Update the instance!
                     images[request.file_name] = image;
