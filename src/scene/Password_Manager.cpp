@@ -24,8 +24,54 @@ namespace sphinx {
         return a < b ? a : b;
     }
 
+    static void
+    draw_image(const std::string& name, ImVec2 max_dimensions = { 256, 256 }) {
+        const Image& image = get_image(name);
+        if (image.is_ready_to_render()) {
+            #pragma warning(push)
+            #pragma warning(disable : 4312) // Typecast from: (unsigned int) 32bit to (void*) 64bit
+            ImTextureID tex_id = (ImTextureID)image.texture_id;
+            #pragma warning(pop)
+
+            /*
+                Calculate image size to fit within { max_dimensions } while retaining aspect ratio.
+            */
+            ImVec2 size = { (f32)image.width, (f32)image.height };
+            ImVec2 uv_min = { 0.0f, 0.0f };
+            ImVec2 uv_max = { 1.0f, 1.0f };
+
+            if (max_dimensions.x <= 0.0f) max_dimensions.x = size.x;
+            if (max_dimensions.y <= 0.0f) max_dimensions.y = size.y;
+
+            // Compute aspect ratio and adjust size
+            float aspect_ratio = size.x / size.y;
+            if (size.x > max_dimensions.x || size.y > max_dimensions.y) {
+                if (aspect_ratio > 1.0f) {
+                    size.x = max_dimensions.x;
+                    size.y = max_dimensions.x / aspect_ratio;
+                } else {
+                    size.y = max_dimensions.y;
+                    size.x = max_dimensions.y * aspect_ratio;
+                }
+            }
+
+            ImGui::Image(tex_id, size, uv_min, uv_max);
+        } else {
+            ImDrawList* draw_list = ImGui::GetCurrentWindow()->DrawList;
+            ImVec2 pos            = { ImGui::GetCursorPosX(), ImGui::GetCursorPosY() };
+            f64 time              = ImGui::GetTime();
+            u8 blue               = max(50, (int)(255.0f * std::cos(time*4)));
+
+            draw_list->AddRectFilled(
+                pos,
+                { pos.x + max_dimensions.x, pos.y + max_dimensions.y },
+                IM_COL32(50, 50, blue, 255)
+            );
+        }
+    }
+
     static bool
-    draw_image(const std::string& name, ImVec2 max_dimensions = {256, 256}) {
+    draw_image_button(const std::string& name, ImVec2 max_dimensions = {256, 256}) {
         const Image& image = get_image(name);
         if (image.is_ready_to_render()) {
             #pragma warning(push)
@@ -52,8 +98,7 @@ namespace sphinx {
                 }
             }
 
-            // ImGui::Image(tex_id, size, uv_min, uv_max);
-            if (ImGui::ImageButton("##click_on_img", tex_id, size, uv_min, uv_max)) {
+            if (ImGui::ImageButton(name.c_str(), tex_id, size, uv_min, uv_max)) {
                 return true;
             }
         } else {
@@ -161,15 +206,15 @@ namespace sphinx {
     enum class Scene_Status {
         FIRST    = 0,
         LOGIN    = 1,
-        MAIN     = 2,
-        SHUTDOWN = 4
+        MAIN     = 2
     };
 
     /*
         @todo: cleanup everything, split out the scene into smaller ones?
     */
     struct Scene_Context {
-        std::vector<std::string> images;
+        std::string              selected_image;
+        std::set<std::string>    images;
         std::vector<std::string> errors;
         AES128*                  aes; // temp, before we create the encrypt thread...
         Scene_Status             scene_status;
@@ -187,8 +232,6 @@ namespace sphinx {
             repeat_key_buffer{},
             aes(nullptr)
         {
-            images.reserve(32);
-
             state_file_path = get_executable_dir();
             state_file_path /= ".sphinx_state/data.bin";
 
@@ -325,7 +368,7 @@ namespace sphinx {
             size_t end        = 0;
 
             while ((end = state.find(';', start)) != std::string::npos) {
-                images.emplace_back(state.substr(start, end - start));
+                images.emplace(state.substr(start, end - start));
                 start = end + 1;
             }
         }
@@ -445,7 +488,7 @@ namespace sphinx {
 
                 if (ImGuiFileDialog::Instance()->Display("#image_picker")) {
                     if (ImGuiFileDialog::Instance()->IsOk()) {
-                        context->images.push_back(ImGuiFileDialog::Instance()->GetFilePathName());
+                        context->images.emplace(ImGuiFileDialog::Instance()->GetFilePathName());
                     }
 
                     ImGuiFileDialog::Instance()->Close();
@@ -453,14 +496,26 @@ namespace sphinx {
 
                 // Draw the image grid:
                 ImVec2 max_dimensions = { 256, 256 };
+                ImVec2 dim = ImGui::GetContentRegionAvail();
+                f32 cx = 0.0f;
+
                 for (const std::string& image: context->images) {
-                    if (draw_image(image, max_dimensions)) {
+                    if ((cx + max_dimensions.x) < dim.x -100.0f) {
+                        ImGui::SameLine();
+                        cx += max_dimensions.x;
+                    } else {
+                        cx = 0.0f;
+                    }
+
+                    if (draw_image_button(image, max_dimensions)) {
                         ImGui::OpenPopup("##modal");
+                        context->selected_image = image;
                     }
                 }
 
                 if (ImGui::BeginPopupModal("##modal", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-                    ImGui::Text("Brother");
+                    ImGui::Text("%s", context->selected_image.c_str());
+                    draw_image(context->selected_image);
                     if (ImGui::Button("Close##modal")) {
                         ImGui::CloseCurrentPopup();
                     }
@@ -469,12 +524,6 @@ namespace sphinx {
 
                 im::dock_to_center("##main", dockspace_id);
             }
-
-            break;
-        /*
-            Shutdown
-        */
-        case Scene_Status::SHUTDOWN:
             break;
         }
 

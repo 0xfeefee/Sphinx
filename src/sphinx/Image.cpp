@@ -149,16 +149,15 @@ namespace sphinx {
                     if (!requests.empty()) {
                         request = requests.back();
                         requests.pop_back();
-                        sleep_time = 16;
+                        sleep_time = 0;
                     } else {
-                        sleep_time = 256;
+                        sleep_time = 64;
                     }
                 }
 
                 // If request is valid, process it:
                 if (request.image_id >= 0) {
                     Image image = process_image_load_request(request);
-                    // std::this_thread::sleep_for(std::chrono::milliseconds(4096));
 
                     // Update the instance!
                     images[request.file_name] = image;
@@ -174,13 +173,16 @@ namespace sphinx {
 
         void
         start() {
-            std::thread t([this] { loader_thread_fn(); });
-            t.detach();
+            for (int i = 0; i < 8; ++i) {
+                std::thread t([this] { loader_thread_fn(); });
+                t.detach();
+            }
         }
 
         Image&
         add_request_image(std::string file_name) {
             std::lock_guard<std::mutex> lock(mtx);
+
             if (images.find(file_name) == images.end()) {
                 Image_Load_Request request(file_name);
                 requests.push_back(request);
@@ -232,7 +234,6 @@ namespace sphinx {
 
         return loader;
     }
-
 
     Image&
     get_image(std::string image_file_path) {
