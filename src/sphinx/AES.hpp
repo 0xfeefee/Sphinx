@@ -14,7 +14,7 @@
 
     Here we also define { m128 } to avoid including { <wmmintrin.h> }.
 */
-// #define SPHINX_PRECOMPUTE_REVERSE_KEY_SCHEDULE
+#define SPHINX_PRECOMPUTE_REVERSE_KEY_SCHEDULE 1
 typedef long long m128 __attribute__((__vector_size__(16), __aligned__(16)));
 
 namespace sphinx {
@@ -32,11 +32,9 @@ namespace sphinx {
     struct AES_Block {
         u8 data[BLOCK_SIZE] = {};
 
+        [[nodiscard]]
         u8&
         operator[](int index);
-
-        void
-        print();
     };
 
     /*
@@ -46,6 +44,8 @@ namespace sphinx {
 
         For the ease of use we allow it to be constructed from a string implicitly.
         This key is used to generate the key schedule for AES rounds.
+
+        @todo: add better key derivation, for extra safety.
     */
     struct AES_User_Key {
         AES_Block block;
@@ -63,22 +63,23 @@ namespace sphinx {
         AES_Block* blocks;
 
         AES_String(cstr_t text);
+        AES_String(const std::string& string);
         AES_String(int size_in_bytes);
         AES_String(const AES_String& other);
 
         ~AES_String();
 
+        [[nodiscard]]
         int
         size_in_bytes() const;
 
+        [[nodiscard]]
         u8*
         byte_ptr() const;
 
+        [[nodiscard]]
         std::string
         to_string();
-
-        void
-        print();
     };
 
     /*
@@ -91,6 +92,7 @@ namespace sphinx {
     public:
         AES128();
         AES128(const AES_User_Key& user_key);
+
         ~AES128();
 
         [[nodiscard]]

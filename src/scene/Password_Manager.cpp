@@ -24,13 +24,14 @@ namespace sphinx {
         return a < b ? a : b;
     }
 
-    static void
+    static bool
     draw_image(const std::string& name, ImVec2 max_dimensions = {256, 256}) {
         const Image& image = get_image(name);
         if (image.is_ready_to_render()) {
-        #pragma warning(push)
-        #pragma warning(disable : 4312) // Typecast from: (unsigned int) 32bit to (void*) 64bit
+            #pragma warning(push)
+            #pragma warning(disable : 4312) // Typecast from: (unsigned int) 32bit to (void*) 64bit
             ImTextureID tex_id = (ImTextureID)image.texture_id;
+            #pragma warning(pop)
 
             /*
                 Calculate image size to fit within { max_dimensions } while retaining aspect ratio.
@@ -51,13 +52,15 @@ namespace sphinx {
                 }
             }
 
-            ImGui::Image(tex_id, size, uv_min, uv_max);
-        #pragma warning(pop)
+            // ImGui::Image(tex_id, size, uv_min, uv_max);
+            if (ImGui::ImageButton("##click_on_img", tex_id, size, uv_min, uv_max)) {
+                return true;
+            }
         } else {
             ImDrawList* draw_list = ImGui::GetCurrentWindow()->DrawList;
             ImVec2 pos            = { ImGui::GetCursorPosX(), ImGui::GetCursorPosY() };
             f64 time              = ImGui::GetTime();
-            u8 blue               = max(50, (int)(255.0f * std::cos(time)));
+            u8 blue               = max(50, (int)(255.0f * std::cos(time*4)));
 
             draw_list->AddRectFilled(
                 pos,
@@ -65,6 +68,8 @@ namespace sphinx {
                 IM_COL32(50, 50, blue, 255)
             );
         }
+
+        return false;
     }
 
 
@@ -151,7 +156,7 @@ namespace sphinx {
     }
 
     constexpr const char*
-    KEY_VERIFICATION_STRING = "When the terrain disagrees with the map, trust the terrain.";
+    KEY_VERIFICATION_STRING = "The most merciful thing in the world, I think, is the inability of the human mind to correlate all its contents. We live on a placid island of ignorance in the midst of black seas of infinity, and it was not meant that we should voyage far.";
 
     enum class Scene_Status {
         FIRST    = 0,
@@ -210,7 +215,7 @@ namespace sphinx {
             const std::string secret = from_disk(state_key_path.string());
 
             // Decode the secret:
-            std::string str = aes->decrypt(secret.c_str()).to_string();
+            std::string str = aes->decrypt(secret).to_string();
             if (str.compare(KEY_VERIFICATION_STRING) == 0) {
                 std::cout << "The key is valid!" << std::endl;
                 return true;
@@ -273,6 +278,8 @@ namespace sphinx {
             if (is_key_valid()) {
                 scene_status = Scene_Status::MAIN;
                 errors.clear();
+            } else {
+                errors.push_back("Invalid Key!");
             }
         }
 
@@ -301,8 +308,7 @@ namespace sphinx {
     };
 
     Password_Manager::Password_Manager()
-    : context(std::make_unique<Scene_Context>()) {
-    }
+    : context(std::make_unique<Scene_Context>()) {}
 
     Password_Manager::~Password_Manager() {}
 
@@ -390,12 +396,64 @@ namespace sphinx {
                 im::dock_to_center("##login", dockspace_id);
             }
             break;
+        /*
+            Image Grid, read and write passwords.
+        */
         case Scene_Status::MAIN:
             if (im::window("##main")) {
                 ImGui::Text("==Main==");
                 ImGui::Text("Welcome!");
+
+                // if (ImGui::Button("Open Modal")) {
+                //    ImGui::OpenPopup("##modal");
+                // }
+
+                // Add image button:
+                if (ImGui::Button("Add")) {
+                    IGFD::FileDialogConfig config;
+                    config.path = ".";
+
+                    ImGui::SetNextWindowSize({ 500, 500 });
+                    ImGuiFileDialog::Instance()->OpenDialog(
+                        "#image_picker",
+                        "Choose file",
+                        ".png",
+                        config
+                    );
+                }
+                ImGui::Separator();
+
+                if (ImGuiFileDialog::Instance()->Display("#image_picker")) {
+                    if (ImGuiFileDialog::Instance()->IsOk()) {
+                        context->images.push_back(ImGuiFileDialog::Instance()->GetFilePathName());
+                    }
+
+                    ImGuiFileDialog::Instance()->Close();
+                }
+
+                // Draw the image grid:
+                ImVec2 max_dimensions = { 256, 256 };
+                for (const std::string& image: context->images) {
+                    if (draw_image(image, max_dimensions)) {
+                        ImGui::OpenPopup("##modal");
+                    }
+                }
+
+                if (ImGui::BeginPopupModal("##modal", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+                    ImGui::Text("Brother");
+                    if (ImGui::Button("Close##modal")) {
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
+                }
+
+                im::dock_to_center("##main", dockspace_id);
             }
+
             break;
+        /*
+            Shutdown
+        */
         case Scene_Status::SHUTDOWN:
             break;
         }

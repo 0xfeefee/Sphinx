@@ -33,15 +33,6 @@ namespace sphinx {
         return data[index];
     }
 
-    void
-    AES_Block::print() {
-    #if PROJECT_BUILD_DEBUG
-        std::cout << "[";
-        for (u8 c : data) std::cout << c;
-        std::cout << "]";
-    #endif
-    }
-
     static inline int
     byte_count_to_blocks(int byte_count) {
         return (byte_count + BLOCK_SIZE - 1) / BLOCK_SIZE;
@@ -61,6 +52,9 @@ namespace sphinx {
         EXPECT(blocks);
         memcpy(blocks, text, length);
     }
+
+    AES_String::AES_String(const std::string& string):
+    AES_String(string.c_str()) {}
 
     AES_String::AES_String(int size_in_bytes) {
         EXPECT(size_in_bytes > 0);
@@ -96,16 +90,6 @@ namespace sphinx {
     std::string
     AES_String::to_string() {
         return std::string(reinterpret_cast<char*>(blocks), block_count * BLOCK_SIZE);
-    }
-
-    void
-    AES_String::print() {
-    #ifdef PROJECT_BUILD_DEBUG
-        for (int i = 0; i < block_count; ++i) {
-            blocks[i].print();
-        }
-        std::cout << std::endl;
-    #endif
     }
 
 
@@ -179,13 +163,16 @@ namespace sphinx {
 
         for (int i = 0; i < in.block_count; ++i) {
             __m128i data_block = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&in.blocks[i]));
+            // Last key used in encryption step:
             data_block = _mm_xor_si128(data_block, key_schedule[10]);
 
+            // Precomputed keys are: [19 to 11]
         #ifdef SPHINX_PRECOMPUTE_REVERSE_KEYS
-            for (int i = 11; i > 20; --i) {
+            for (int i = 19; i >= 11; --i) {
                 data_block = _mm_aesdec_si128(data_block, key_schedule[i]);
             }
         #else
+            // Otherwise we go from: [9 to 0]
             for (int i = 9; i > 0; --i) {
                 data_block = _mm_aesdec_si128(data_block, _mm_aesimc_si128(key_schedule[i]));
             }
