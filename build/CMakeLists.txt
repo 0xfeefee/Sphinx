@@ -3,7 +3,7 @@
 ##
 cmake_minimum_required(VERSION 3.20)
 project(Sphinx
-	VERSION 0.5.0
+	VERSION 0.6.0
 	LANGUAGES C CXX
 )
 
@@ -12,6 +12,7 @@ set(CMAKE_C_STANDARD   17)
 set(CMAKE_CXX_STANDARD 17)
 set(SRC 			   "${CMAKE_CURRENT_LIST_DIR}/../src")
 set(VENDOR             "${CMAKE_CURRENT_LIST_DIR}/../vendor")
+set(TESTS              "${CMAKE_CURRENT_LIST_DIR}/../tests")
 
 ## Check release mode:
 if (CMAKE_BUILD_TYPE MATCHES Debug)
@@ -19,6 +20,7 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
 else()
 	add_compile_definitions(PROJECT_BUILD_RELEASE=1)
 endif()
+
 
 ## Add: Dear ImGui
 add_library(lib_sphinx_ui
@@ -33,6 +35,9 @@ add_library(lib_sphinx_ui
 	${VENDOR}/imgui-docking-1.91.6/imgui_impl_opengl3.cpp
 	${VENDOR}/imgui-docking-1.91.6/imgui_impl_glfw.cpp
 
+	# File dialog:
+	${VENDOR}/imgui-docking-1.91.6/file_dialog/ImGuiFileDialog.cpp
+
 	# gl3w:
 	${VENDOR}/gl3w-master/src/gl3w.c
 )
@@ -41,6 +46,7 @@ target_include_directories(lib_sphinx_ui
 	PUBLIC
 
 	${VENDOR}/imgui-docking-1.91.6
+	${VENDOR}/dirent/include
 	${VENDOR}/gl3w-master/include
 	${VENDOR}/Win64/glfw-3.4/include
 )
@@ -92,6 +98,9 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 else()
 	message(FATAL_ERROR "Untested compiler!")
 endif()
+
+## Compile definitions:
+add_compile_definitions(PROJECT_NAME="${PROJECT_NAME}")
 
 if (WIN32)
 	target_compile_definitions(${PROJECT_NAME}

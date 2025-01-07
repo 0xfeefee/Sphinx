@@ -328,24 +328,6 @@ namespace sphinx {
         }
 
         void
-        write_to_disk() {
-            /*
-                Write Sphinx data to disk, all we care about are images and the master key.
-                We expect this to be relative to the executable: ./sphinx/state.bin
-            */
-            if (!state_exists_on_disk()) {
-                fs::create_directories(state_file_path.parent_path());
-                std::cout << state_exists_on_disk() << std::endl;
-                std::string data_mock = "";
-
-                to_disk(state_file_path.string(), data_mock);
-            } else {
-                std::string data = from_disk(state_file_path.string());
-                std::cout << data << std::endl;
-            }
-        }
-
-        void
         write_images_to_disk() {
             std::ofstream out_file(state_file_path.string());
             EXPECT(out_file);
@@ -420,7 +402,7 @@ namespace sphinx {
         case Scene_Status::FIRST:
             if (im::window("##first")) {
                 ImGui::Text("==First==");
-                ImGui::Checkbox("Show password", &context->hide_key_input_text);
+                ImGui::Checkbox("Hide password", &context->hide_key_input_text);
                 ImGui::SetNextItemWidth(BLOCK_SIZE*8);
                 ImGui::InputText(
                     "##master_key_input",
@@ -449,7 +431,7 @@ namespace sphinx {
         case Scene_Status::LOGIN:
             if (im::window("##login")) {
                 ImGui::Text("==Login==");
-                ImGui::Checkbox("Show password", &context->hide_key_input_text);
+                ImGui::Checkbox("Hide password", &context->hide_key_input_text);
                 ImGui::SetNextItemWidth(BLOCK_SIZE*8);
                 ImGui::InputText(
                     "##master_key_input",
@@ -508,17 +490,26 @@ namespace sphinx {
                     }
 
                     if (draw_image_button(image, max_dimensions)) {
-                        ImGui::OpenPopup("##modal");
+                        ImGui::OpenPopup("Message View##modal");
                         context->selected_image = image;
                     }
                 }
 
-                if (ImGui::BeginPopupModal("##modal", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+                if (ImGui::BeginPopupModal("Message View##modal", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
                     ImGui::Text("%s", context->selected_image.c_str());
                     draw_image(context->selected_image);
+
+                    ImGui::SetNextItemWidth(256.0f);
+                    ImGui::InputText("##image_input_text", context->content_input_buffer, BLOCK_SIZE*4);
+                    ImGui::SameLine();
+                    if (ImGui::Button("Commit##modal")) {
+                        Image& i = get_image(context->selected_image);
+                    }
+                    ImGui::PushStyleColor(ImGuiCol_Button, {0.4f, 0.1f, 0.1f, 1.0f});
                     if (ImGui::Button("Close##modal")) {
                         ImGui::CloseCurrentPopup();
                     }
+                    ImGui::PopStyleColor();
                     ImGui::EndPopup();
                 }
 
@@ -532,7 +523,10 @@ namespace sphinx {
 
     void
     Password_Manager::cleanup() {
-        context->write_images_to_disk();
+        // Only write the images to disk if we are in the { MAIN } part of the scene.
+        if (context->scene_status == Scene_Status::MAIN) {
+            context->write_images_to_disk();
+        }
     }
 
 }

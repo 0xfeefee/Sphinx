@@ -24,9 +24,12 @@ namespace sphinx {
         s16 height;
         s32 size;
         u8* data;
+        std::string message;
 
         Image(int id = -1, s16 width = 0, s16 height = 0, u8* data = nullptr)
-        : id(id), texture_id(-1), width(width), height(height), size(0), data(data) {}
+        : id(id), texture_id(-1), width(width), height(height), size(0), data(data) {
+            message.reserve(BLOCK_SIZE*4);
+        }
 
         bool
         is_ready_to_write() const;
@@ -50,5 +53,11 @@ namespace sphinx {
     */
     Image&
     get_image(std::string image_file_path);
+
+    /*
+        @temporary: just to finish the MVP.
+    */
+    void
+    set_aes(AES128* aes);
 
 }

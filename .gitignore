@@ -1,9 +1,13 @@
 
-## Ignore
+## Directories
 .w_scripts
 bin/*
-.clangd
+ref/*
+
+## Files
 .tmy
+.clangd
+tmy_md.md
 
 ## Exceptions
 !.gitkeep

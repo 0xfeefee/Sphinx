@@ -1,5 +1,5 @@
-# Sphinx (v0.5.0)
-A simple GUI password/secret manager written in C++.
+# Sphinx (v0.6.0)
+A simple GUI tool for storing encrypted messages in `PNG` images.
 
 ## Idea
 Store AES encrypted messages in `.PNG` images.
@@ -8,6 +8,10 @@ Store AES encrypted messages in `.PNG` images.
 **Intel's AES-NI (Advanced Encryption Standard New Instructions)**
 or [OpenSSL](https://github.com/openssl/openssl).
 - For UI we will use [Dear ImGui](https://github.com/ocornut/imgui).
+
+## Structure
+- Time tracking: [docs/Time](./docs/Time.md)
+- Docs
 
 ## Tested
 - [X] Windows + Clang

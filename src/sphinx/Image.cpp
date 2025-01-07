@@ -136,6 +136,7 @@ namespace sphinx {
         std::vector<Image_Load_Request>        requests;
         std::unordered_map<std::string, Image> images;
         std::mutex mtx;
+        AES128* aes = nullptr;
 
         void
         loader_thread_fn() {
@@ -169,6 +170,11 @@ namespace sphinx {
         Image_Loader() {
             requests.reserve(16);
             images.reserve(32);
+        }
+
+        void
+        set_aes(AES128* aes) {
+            this->aes = aes;
         }
 
         void
@@ -222,7 +228,6 @@ namespace sphinx {
         }
     };
 
-
     // @temporary: dirty singleton ...
     Image_Loader*
     get_loader() {
@@ -245,6 +250,11 @@ namespace sphinx {
         }
 
         return i;
+    }
+
+    void
+    set_aes(AES128* aes) {
+        get_loader()->set_aes(aes);
     }
 
 }
