@@ -68,7 +68,11 @@ add_executable(${PROJECT_NAME}
 	${SRC}/sphinx/AES.cpp
 	${SRC}/sphinx/GUI.cpp
 	${SRC}/sphinx/Image.cpp
+	${SRC}/sphinx/PNG_Image.cpp
+	${SRC}/sphinx/Image_Manager.cpp
 	${SRC}/scene/Password_Manager.cpp
+	${SRC}/util/Thread_Pool.cpp
+	${SRC}/util/Circular_Vector.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

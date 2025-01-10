@@ -10,28 +10,28 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+namespace im = ImGui_Extended;
 
 #include <file_dialog/ImGuiFileDialog.h>
 
-namespace im = ImGui_Extended;
 
 namespace sphinx {
 
-    struct Context {
+    struct UI_Context {
         GLFWwindow* h_window;
         bool        is_first_frame;
 
-        Context()
+        UI_Context()
         : h_window(NULL),
           is_first_frame(true) {}
 
-        ~Context() = default;
+        ~UI_Context() = default;
     };
 
 
     Application::Application(Unique<Base_Scene> scene)
-    : scene(std::move(scene)), context(std::make_unique<Context>())
-    {}
+    : scene(std::move(scene)),
+      context(std::make_unique<UI_Context>()) {}
 
     Application::~Application() {}
 

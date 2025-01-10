@@ -3,16 +3,18 @@
 /*
 # AES encryption
 
-    We are using Intel's AES-NI instruction set. This code is based on the official guide from Intel!
-    For our purposes we only care about AES128, ECB - which should be perfectly adequate for small
-    strings such as passwords, since those are not big enough to be easily defeated with repeating
-    pattern analysis.
+    We are using Intel's AES-NI. Code in this module is based on the official guide from Intel!
+    For our purposes we only care about AES128, ECB - which should be perfectly adequate
+    for small strings such as passwords, since those are not big enough to be easily defeated
+    with repeating pattern analysis. Though we could do a better key derivation strategy, right
+    now we use a key as-is if it's 16 characters long, otherwise we repeat the key until it's
+    16 characters long.
 
     Config:
-    - { SPHINX_PRECOMPUTE_REVERSE_KEY_SCHEDULE }: if defined will cause the reverse key schedule to be
-      generated together with the key schedule.
+    - { SPHINX_PRECOMPUTE_REVERSE_KEY_SCHEDULE }: if defined will cause the reverse key schedule
+    to be generated together with the key schedule.
 
-    Here we also define { m128 } to avoid including { <wmmintrin.h> }.
+    Here we also define { m128 } to avoid including { <wmmintrin.h> } in this header.
 */
 #define SPHINX_PRECOMPUTE_REVERSE_KEY_SCHEDULE 1
 typedef long long m128 __attribute__((__vector_size__(16), __aligned__(16)));
@@ -29,6 +31,11 @@ namespace sphinx {
     static constexpr int KEY_ROUNDS = 11;
 #endif
 
+    /*
+        A single block abstracted out for convenience, we can remove this later and just do
+        an array of bytes which is a multiple of { BLOCK_SIZE }, in practice this is the same
+        though - since we are storing these blocks contiguously.
+    */
     struct AES_Block {
         u8 data[BLOCK_SIZE] = {};
 
@@ -38,19 +45,15 @@ namespace sphinx {
     };
 
     /*
-        User key is essentially a master password, it's required for this key to have the size of 1
-        AES block, i.e: 16 bytes in this case. If user supplies a key shorter than 16 bytes we will
-        wrap it around until it's a 16 byte key.
+        User key is essentially a master password, it's required for this key to have the size
+        of 1 AES block, i.e: 16 bytes in this case. If user supplies a key shorter than 16 bytes
+        we will wrap it around until it's a 16 byte key.
 
         For the ease of use we allow it to be constructed from a string implicitly.
-        This key is used to generate the key schedule for AES rounds.
-
-        @todo: add better key derivation, for extra safety.
     */
     struct AES_User_Key {
         AES_Block block;
 
-        AES_User_Key();
         AES_User_Key(cstr_t key_string);
     };
 

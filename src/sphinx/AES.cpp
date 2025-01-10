@@ -17,11 +17,9 @@ namespace sphinx {
         memcpy(block.data, key_string, key_length);
         for (int i = key_length; i < BLOCK_SIZE; ++i) {
             int copy_index = (i-key_length) % key_length;
-            block[i] = block[copy_index];
+            block[i]       = block[copy_index];
         }
     }
-
-    AES_User_Key::AES_User_Key() {}
 
 
     /*

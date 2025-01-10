@@ -15,7 +15,11 @@ namespace fs = std::filesystem;
 
 namespace im = ImGui_Extended;
 
+#include <sphinx/Image_Manager.hpp>
+
 namespace sphinx {
+
+    static Image_Manager man;
 
     /*
         Helper function to draw an image to the screen.
@@ -26,7 +30,8 @@ namespace sphinx {
 
     static void
     draw_image(const std::string& name, ImVec2 max_dimensions = { 256, 256 }) {
-        const Image& image = get_image(name);
+        // const Image& image = get_image(name);
+        const PNG_Image& image = man.get_image(name);
         if (image.is_ready_to_render()) {
             #pragma warning(push)
             #pragma warning(disable : 4312) // Typecast from: (unsigned int) 32bit to (void*) 64bit
@@ -72,7 +77,8 @@ namespace sphinx {
 
     static bool
     draw_image_button(const std::string& name, ImVec2 max_dimensions = {256, 256}) {
-        const Image& image = get_image(name);
+        // const Image& image = get_image(name);
+        const PNG_Image& image = man.get_image(name);
         if (image.is_ready_to_render()) {
             #pragma warning(push)
             #pragma warning(disable : 4312) // Typecast from: (unsigned int) 32bit to (void*) 64bit

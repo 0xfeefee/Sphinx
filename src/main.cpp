@@ -1,5 +1,8 @@
 
 #include <scene/Password_Manager.hpp>
+#include <sphinx/Image_Manager.hpp>
+#include <util/Thread_Pool.hpp>
+
 
 int main() {
     using namespace sphinx;

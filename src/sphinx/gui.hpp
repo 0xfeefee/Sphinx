@@ -24,11 +24,11 @@ namespace sphinx {
     /*
         Applications runs the user scene.
     */
-    struct Context;
+    struct UI_Context;
     class Application final {
     private:
         Unique<Base_Scene> scene;
-        Unique<Context>    context;
+        Unique<UI_Context> context;
 
     public:
         Application(Unique<Base_Scene> scene);
