@@ -19,111 +19,6 @@ namespace im = ImGui_Extended;
 
 namespace sphinx {
 
-    static Image_Manager man;
-
-    /*
-        Helper function to draw an image to the screen.
-    */
-    static int minx(int a, int b) {
-        return a < b ? a : b;
-    }
-
-    static void
-    draw_image(const std::string& name, ImVec2 max_dimensions = { 256, 256 }) {
-        // const Image& image = get_image(name);
-        const PNG_Image& image = man.get_image(name);
-        if (image.is_ready_to_render()) {
-            #pragma warning(push)
-            #pragma warning(disable : 4312) // Typecast from: (unsigned int) 32bit to (void*) 64bit
-            ImTextureID tex_id = (ImTextureID)image.texture_id;
-            #pragma warning(pop)
-
-            /*
-                Calculate image size to fit within { max_dimensions } while retaining aspect ratio.
-            */
-            ImVec2 size = { (f32)image.width, (f32)image.height };
-            ImVec2 uv_min = { 0.0f, 0.0f };
-            ImVec2 uv_max = { 1.0f, 1.0f };
-
-            if (max_dimensions.x <= 0.0f) max_dimensions.x = size.x;
-            if (max_dimensions.y <= 0.0f) max_dimensions.y = size.y;
-
-            // Compute aspect ratio and adjust size
-            float aspect_ratio = size.x / size.y;
-            if (size.x > max_dimensions.x || size.y > max_dimensions.y) {
-                if (aspect_ratio > 1.0f) {
-                    size.x = max_dimensions.x;
-                    size.y = max_dimensions.x / aspect_ratio;
-                } else {
-                    size.y = max_dimensions.y;
-                    size.x = max_dimensions.y * aspect_ratio;
-                }
-            }
-
-            ImGui::Image(tex_id, size, uv_min, uv_max);
-        } else {
-            ImDrawList* draw_list = ImGui::GetCurrentWindow()->DrawList;
-            ImVec2 pos            = { ImGui::GetCursorPosX(), ImGui::GetCursorPosY() };
-            f64 time              = ImGui::GetTime();
-            u8 blue               = max(50, (int)(255.0f * std::cos(time*4)));
-
-            draw_list->AddRectFilled(
-                pos,
-                { pos.x + max_dimensions.x, pos.y + max_dimensions.y },
-                IM_COL32(50, 50, blue, 255)
-            );
-        }
-    }
-
-    static bool
-    draw_image_button(const std::string& name, ImVec2 max_dimensions = {256, 256}) {
-        // const Image& image = get_image(name);
-        const PNG_Image& image = man.get_image(name);
-        if (image.is_ready_to_render()) {
-            #pragma warning(push)
-            #pragma warning(disable : 4312) // Typecast from: (unsigned int) 32bit to (void*) 64bit
-            ImTextureID tex_id = (ImTextureID)image.texture_id;
-            #pragma warning(pop)
-
-            /*
-                Calculate image size to fit within { max_dimensions } while retaining aspect ratio.
-            */
-            ImVec2 size = { (f32)image.width, (f32)image.height };
-            ImVec2 uv_min = { 0.0f, 0.0f };
-            ImVec2 uv_max = { 1.0f, 1.0f };
-
-            // Compute aspect ratio and adjust size
-            float aspect_ratio = size.x / size.y;
-            if (size.x > max_dimensions.x || size.y > max_dimensions.y) {
-                if (aspect_ratio > 1.0f) {
-                    size.x = max_dimensions.x;
-                    size.y = max_dimensions.x / aspect_ratio;
-                } else {
-                    size.y = max_dimensions.y;
-                    size.x = max_dimensions.y * aspect_ratio;
-                }
-            }
-
-            if (ImGui::ImageButton(name.c_str(), tex_id, size, uv_min, uv_max)) {
-                return true;
-            }
-        } else {
-            ImDrawList* draw_list = ImGui::GetCurrentWindow()->DrawList;
-            ImVec2 pos            = { ImGui::GetCursorPosX(), ImGui::GetCursorPosY() };
-            f64 time              = ImGui::GetTime();
-            u8 blue               = max(50, (int)(255.0f * std::cos(time*4)));
-
-            draw_list->AddRectFilled(
-                pos,
-                { pos.x + max_dimensions.x, pos.y + max_dimensions.y },
-                IM_COL32(50, 50, blue, 255)
-            );
-        }
-
-        return false;
-    }
-
-
     static void
     image_store_msg(const std::string& name, char* master_key_buffer, char* content_buffer) {
         Image& image = get_image(name);
@@ -219,6 +114,7 @@ namespace sphinx {
         @todo: cleanup everything, split out the scene into smaller ones?
     */
     struct Scene_Context {
+        Image_Manager            image_manager;
         std::string              selected_image;
         std::set<std::string>    images;
         std::vector<std::string> errors;
@@ -249,6 +145,52 @@ namespace sphinx {
             } else {
                 scene_status = Scene_Status::FIRST;
             }
+        }
+
+        void
+        draw_image(const std::string& name, ImVec2 max_dimensions = { 256, 256 }) {
+            const PNG_Image& image = image_manager.get_image(name);
+            if (image.is_ready_to_render()) {
+                im::image(image.texture_id, image.width, image.height, max_dimensions);
+            } else {
+                ImDrawList* draw_list = ImGui::GetCurrentWindow()->DrawList;
+                ImVec2 pos            = { ImGui::GetCursorPosX(), ImGui::GetCursorPosY() };
+                f64 time              = ImGui::GetTime();
+                u8 blue               = max(50, (int)(255.0f * std::cos(time*4)));
+
+                draw_list->AddRectFilled(
+                    pos,
+                    { pos.x + max_dimensions.x, pos.y + max_dimensions.y },
+                    IM_COL32(50, 50, blue, 255)
+                );
+            }
+        }
+
+        bool
+        draw_image_button(const std::string& name, ImVec2 max_dimensions = {256, 256}) {
+            const PNG_Image& image = image_manager.get_image(name);
+            if (image.is_ready_to_render()) {
+                return im::image_button(
+                    name.c_str(),
+                    image.texture_id,
+                    image.width,
+                    image.height,
+                    max_dimensions
+                );
+            } else {
+                ImDrawList* draw_list = ImGui::GetCurrentWindow()->DrawList;
+                ImVec2 pos            = { ImGui::GetCursorPosX(), ImGui::GetCursorPosY() };
+                f64 time              = ImGui::GetTime();
+                u8 blue               = max(50, (int)(255.0f * std::cos(time*4)));
+
+                draw_list->AddRectFilled(
+                    pos,
+                    { pos.x + max_dimensions.x, pos.y + max_dimensions.y },
+                    IM_COL32(50, 50, blue, 255)
+                );
+            }
+
+            return false;
         }
 
         bool
@@ -359,6 +301,8 @@ namespace sphinx {
                 images.emplace(state.substr(start, end - start));
                 start = end + 1;
             }
+
+            std::cout << "Loaded: " << images.size() << std::endl;
         }
     };
 
@@ -495,7 +439,7 @@ namespace sphinx {
                         cx = 0.0f;
                     }
 
-                    if (draw_image_button(image, max_dimensions)) {
+                    if (context->draw_image_button(image, max_dimensions)) {
                         ImGui::OpenPopup("Message View##modal");
                         context->selected_image = image;
                     }
@@ -503,7 +447,7 @@ namespace sphinx {
 
                 if (ImGui::BeginPopupModal("Message View##modal", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
                     ImGui::Text("%s", context->selected_image.c_str());
-                    draw_image(context->selected_image);
+                    context->draw_image(context->selected_image);
 
                     ImGui::SetNextItemWidth(256.0f);
                     ImGui::InputText("##image_input_text", context->content_input_buffer, BLOCK_SIZE*4);

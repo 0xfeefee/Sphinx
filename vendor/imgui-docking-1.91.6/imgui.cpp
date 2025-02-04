@@ -21748,6 +21748,66 @@ namespace ImGui_Extended {
         return window;
     }
 
+    void
+    image(const int texture_id, int width, int height, ImVec2 max_dimensions) {
+        #pragma warning(push)
+        #pragma warning(disable : 4312) // Typecast from: (unsigned int) 32bit to (void*) 64bit
+            ImTextureID tex_id = (ImTextureID)texture_id;
+        #pragma warning(pop)
+
+        // Calculate image size to fit within { max_dimensions } while retaining aspect ratio.
+        ImVec2 size   = { (float)width, (float)height };
+        ImVec2 uv_min = { 0.0f, 0.0f };
+        ImVec2 uv_max = { 1.0f, 1.0f };
+
+        if (max_dimensions.x <= 0.0f) max_dimensions.x = size.x;
+        if (max_dimensions.y <= 0.0f) max_dimensions.y = size.y;
+
+        // Compute aspect ratio and adjust size:
+        float aspect_ratio = size.x / size.y;
+        if (size.x > max_dimensions.x || size.y > max_dimensions.y) {
+            if (aspect_ratio > 1.0f) {
+                size.x = max_dimensions.x;
+                size.y = max_dimensions.x / aspect_ratio;
+            } else {
+                size.y = max_dimensions.y;
+                size.x = max_dimensions.y * aspect_ratio;
+            }
+        }
+
+        Image(tex_id, size, uv_min, uv_max);
+    }
+
+    bool
+    image_button(const char* name, const int texture_id, int width, int height, ImVec2 max_dimensions) {
+        #pragma warning(push)
+        #pragma warning(disable : 4312) // Typecast from: (unsigned int) 32bit to (void*) 64bit
+            ImTextureID tex_id = (ImTextureID)texture_id;
+        #pragma warning(pop)
+
+        // Calculate image size to fit within { max_dimensions } while retaining aspect ratio.
+        ImVec2 size   = { (float)width, (float)height };
+        ImVec2 uv_min = { 0.0f, 0.0f };
+        ImVec2 uv_max = { 1.0f, 1.0f };
+
+        if (max_dimensions.x <= 0.0f) max_dimensions.x = size.x;
+        if (max_dimensions.y <= 0.0f) max_dimensions.y = size.y;
+
+        // Compute aspect ratio and adjust size:
+        float aspect_ratio = size.x / size.y;
+        if (size.x > max_dimensions.x || size.y > max_dimensions.y) {
+            if (aspect_ratio > 1.0f) {
+                size.x = max_dimensions.x;
+                size.y = max_dimensions.x / aspect_ratio;
+            } else {
+                size.y = max_dimensions.y;
+                size.x = max_dimensions.y * aspect_ratio;
+            }
+        }
+
+        return ImageButton(name, tex_id, size, uv_min, uv_max);
+    }
+
 }
 #endif // USE_IMGUI_EXTENDED
 

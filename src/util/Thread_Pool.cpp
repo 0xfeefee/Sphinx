@@ -11,7 +11,7 @@ namespace sphinx {
 
     Thread_Pool::~Thread_Pool() {
         should_stop = true;
-        for (std::thread& current_thread : threads) {
+        for (std::thread& current_thread: threads) {
             if (current_thread.joinable()) {
                 current_thread.join();
             }

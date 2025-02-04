@@ -4,7 +4,7 @@
 
 // Dependencies:
 #include <util/Thread_Pool.hpp>
-#include <util/Circular_Vector.hpp>
+#include <util/SWMR.hpp>
 
 // // Dependencies:
 // #define STB_IMAGE_IMPLEMENTATION
@@ -24,20 +24,18 @@ namespace sphinx {
 
     class Image_Manager_Context {
     public:
-        static constexpr int MIN_CAPACITY { 32 };
+        static constexpr int IMG_LOADERS  { 8 };
 
     private:
         std::unordered_map<std::string, PNG_Image> images;
         Thread_Pool                                thread_pool;
-        Circular_Vector<std::string>               images_to_load;
+        SWMR_Throwaway<std::string, IMG_LOADERS>   load_requests;
 
     private:
         void
-        load_image_from_disk(const std::string& file_path) {
+        load_image_from_disk(const std::string& file_path, int index) {
             PNG_Image& image = images[file_path];
-            EXPECT(!image.is_loaded());
-
-            std::cout << "Loading from disk: " << file_path << std::endl;
+            EXPECT(!image.is_loaded() && file_path.size() > 0);
 
             image.data = stbi_load(
                 file_path.c_str(),
@@ -48,40 +46,31 @@ namespace sphinx {
             );
 
             EXPECT(image.width > 0 && image.height > 0 && image.data != nullptr);
-            images[file_path] = image;
         }
 
         void
         load_image_task(Stop_Flag& should_stop, int index) {
             while (!should_stop) {
-                if (images_to_load.is_empty()) {
-                    sleep_for(16);
-                }
-
-                std::string& image_path = images_to_load.read();
+                std::string& image_path = load_requests.read(index);
                 if (image_path.size() > 0) {
-                    std::cout << "size: " << images_to_load.get_count() << std::endl;
-                    load_image_from_disk(image_path);
+                    load_image_from_disk(image_path, index);
                 }
-            }
 
-            std::cout << "thread done: "<< index<<std::endl;
-            sleep_for(128);
+                sleep_for(16);
+            }
         }
 
     public:
-        Image_Manager_Context(): images_to_load(MIN_CAPACITY*2) {
-            images.reserve(Image_Manager_Context::MIN_CAPACITY);
-
+        Image_Manager_Context() {
             // Start the worker threads:
-            // for (int i = 0; i < 1; ++i) {
+            for (int i = 0; i < IMG_LOADERS; ++i) {
                 thread_pool.start_thread(
                     [](Stop_Flag& stop_flag, int index, Image_Manager_Context* context) {
                         context->load_image_task(stop_flag, index);
                     },
                     this
                 );
-            // }
+            }
         }
 
         PNG_Image&
@@ -92,7 +81,7 @@ namespace sphinx {
             if (image.width < 0) {
                 image.width = 0;
 
-                images_to_load.write(image_path);
+                load_requests.write(image_path);
             }
 
             return image;
@@ -100,7 +89,6 @@ namespace sphinx {
 
         void
         create_texture(PNG_Image& image) {
-            // MAIN_THREAD_ONLY();
             EXPECT(!image.is_ready_to_render());
 
             unsigned int texture_id;
@@ -119,7 +107,7 @@ namespace sphinx {
                 image.width,
                 image.height,
                 0,
-                GL_RGBA, // We are only doing .PNG, because why not...
+                GL_RGBA,
                 GL_UNSIGNED_BYTE,
                 image.data
             );

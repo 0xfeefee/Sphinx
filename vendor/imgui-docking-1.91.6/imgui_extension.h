@@ -30,4 +30,10 @@ namespace ImGui_Extended {
     void
     close_last_window();
 
+    void
+    image(const int texture_id, int width, int height, ImVec2 max_dimensions);
+
+    bool
+    image_button(const char* name, const int texture_id, int width, int height, ImVec2 max_dimensions);
+
 }

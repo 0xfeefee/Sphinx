@@ -10,6 +10,10 @@
 #include <mutex>
 #include <unordered_map>
 #include <sstream>
+#include <array>
+#include <optional>
+#include <functional>
+#include <queue>
 
 /*
 ## Utility macros
@@ -27,8 +31,6 @@
     #define EXPECT(condition, ...)
     #define ERROR_IF(condition, ...)
 #endif
-
-#define MAIN_THREAD_ONLY() if (std::this_thread::get_id() != std::thread::id()) sphinx::terminate(__FILE__, __LINE__, "This function may only be called from the main thread!")
 
 template <typename T>
 using Unique = std::unique_ptr<T>;
