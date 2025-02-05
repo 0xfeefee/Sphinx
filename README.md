@@ -13,3 +13,6 @@ Store AES encrypted messages in `.PNG` images.
 
 ## References
 - [Intel Intrinsics Guide](https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ig_expand=243): Good reference for all of Intel's intrinsics.
+
+## Screenshot
+![v.0.7.0](https://github.com/0xfeefee/Sphinx/blob/main/bin/screenshots/v0.7.0.PNG)
