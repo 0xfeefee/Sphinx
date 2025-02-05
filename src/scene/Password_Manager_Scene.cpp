@@ -1,10 +1,9 @@
 
 // Implements:
-#include <scene/Password_Manager.hpp>
+#include <scene/Password_Manager_Scene.hpp>
 
 // Dependencies:
 #include <sphinx/sphinx.hpp>
-#include <sphinx/Image.hpp>
 
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -12,54 +11,11 @@ namespace fs = std::filesystem;
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <file_dialog/ImGuiFileDialog.h>
-
 namespace im = ImGui_Extended;
 
 #include <sphinx/Image_Manager.hpp>
 
 namespace sphinx {
-
-    static void
-    image_store_msg(const std::string& name, char* master_key_buffer, char* content_buffer) {
-        Image& image = get_image(name);
-
-        if (image.is_ready_to_write()) {
-            // Temporary: encrypt
-            AES128 aes(master_key_buffer);
-            AES_String content = content_buffer;
-            AES_String encrypted = aes.encrypt(content);
-
-            // Just test it out quickly!
-            u8* encrypted_content_data   = encrypted.blocks[0].data;
-            int encrypted_content_length = encrypted.size_in_bytes();
-
-            image.try_write(Image_Message(encrypted_content_length, encrypted_content_data), name);
-        }
-    }
-
-    static void
-    image_load_msg(const std::string& name, char* master_key_buffer, char* content_buffer) {
-        Image& image = get_image(name);
-
-        if (image.is_ready_to_write()) {
-            Image_Message msg(0, nullptr);
-            image.try_read(msg);
-
-            // Temporary: decrypt:
-            AES128 aes(master_key_buffer);
-            AES_String encrypted_content((char*)msg.data);
-            AES_String decrypted = aes.decrypt(encrypted_content);
-        }
-    }
-
-    /*
-        We can add a magic header of sorts to make sure a thing works.
-    */
-    struct Image_Data {
-        std::string image_name;
-        std::string description;
-    };
-
 
     /*
         Get the executable path, since C++ is somehow unable to provide this.
@@ -306,13 +262,13 @@ namespace sphinx {
         }
     };
 
-    Password_Manager::Password_Manager()
+    Password_Manager_Scene::Password_Manager_Scene()
     : context(std::make_unique<Scene_Context>()) {}
 
-    Password_Manager::~Password_Manager() {}
+    Password_Manager_Scene::~Password_Manager_Scene() {}
 
     void
-    Password_Manager::init() {
+    Password_Manager_Scene::init() {
         im::set_window_flags(
             ImGuiWindowFlags_NoCollapse |
             ImGuiWindowFlags_NoMove     |
@@ -326,7 +282,7 @@ namespace sphinx {
     }
 
     bool
-    Password_Manager::run(f64 delta_time) {
+    Password_Manager_Scene::run(f64 delta_time) {
         int dockspace_id = im::main_dockspace("##dockspace");
 
         if (!context->errors.empty()) {
@@ -336,7 +292,9 @@ namespace sphinx {
                 for (const std::string& error : context->errors) {
                     ImGui::Text("%s", error.c_str());
                 }
+
                 ImGui::PopStyleColor();
+
                 if (ImGui::Button("Dismiss")) {
                     context->errors.clear();
                 }
@@ -389,9 +347,11 @@ namespace sphinx {
                     BLOCK_SIZE,
                     context->hide_key_input_text ? ImGuiInputTextFlags_Password : ImGuiInputTextFlags_None
                 );
+
                 if (ImGui::Button("Login")) {
                     context->try_login();
                 }
+
                 im::dock_to_center("##login", dockspace_id);
             }
             break;
@@ -442,23 +402,45 @@ namespace sphinx {
                     if (context->draw_image_button(image, max_dimensions)) {
                         ImGui::OpenPopup("Message View##modal");
                         context->selected_image = image;
+
+                        PNG_Image& current_image = context->image_manager.get_image(image);
+                        if (current_image.is_loaded()) {
+                            std::string message = current_image.read();
+
+                            // Reset the input buffer if there's no message:
+                            if (message.size() == 0) {
+                                context->content_input_buffer[0] = '\0';
+                            } else {
+                                EXPECT(message.size() < MAX_MESSAGE_SIZE_BITS);
+                                std::memcpy(context->content_input_buffer, message.c_str(), message.size());
+                            }
+                        }
                     }
                 }
 
                 if (ImGui::BeginPopupModal("Message View##modal", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
                     ImGui::Text("%s", context->selected_image.c_str());
-                    context->draw_image(context->selected_image);
+                    context->draw_image(context->selected_image, { 512, 512});
 
                     ImGui::SetNextItemWidth(256.0f);
                     ImGui::InputText("##image_input_text", context->content_input_buffer, BLOCK_SIZE*4);
                     ImGui::SameLine();
+
                     if (ImGui::Button("Commit##modal")) {
-                        Image& i = get_image(context->selected_image);
+                        PNG_Image& current_image = context->image_manager.get_image(context->selected_image);
+                        if (!current_image.try_write(context->content_input_buffer, context->selected_image)) {
+                            context->errors.push_back("Unable to write to an image!");
+                        } else {
+                            ImGui::CloseCurrentPopup();
+                        }
                     }
+
                     ImGui::PushStyleColor(ImGuiCol_Button, {0.4f, 0.1f, 0.1f, 1.0f});
+
                     if (ImGui::Button("Close##modal")) {
                         ImGui::CloseCurrentPopup();
                     }
+
                     ImGui::PopStyleColor();
                     ImGui::EndPopup();
                 }
@@ -472,7 +454,7 @@ namespace sphinx {
     }
 
     void
-    Password_Manager::cleanup() {
+    Password_Manager_Scene::cleanup() {
         // Only write the images to disk if we are in the { MAIN } part of the scene.
         if (context->scene_status == Scene_Status::MAIN) {
             context->write_images_to_disk();

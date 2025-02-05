@@ -21778,6 +21778,36 @@ namespace ImGui_Extended {
         Image(tex_id, size, uv_min, uv_max);
     }
 
+    // bool
+    // image_button(const char* name, const int texture_id, int width, int height, ImVec2 max_dimensions) {
+    //     #pragma warning(push)
+    //     #pragma warning(disable : 4312) // Typecast from: (unsigned int) 32bit to (void*) 64bit
+    //         ImTextureID tex_id = (ImTextureID)texture_id;
+    //     #pragma warning(pop)
+
+    //     // Calculate image size to fit within { max_dimensions } while retaining aspect ratio.
+    //     ImVec2 size   = { (float)width, (float)height };
+    //     ImVec2 uv_min = { 0.0f, 0.0f };
+    //     ImVec2 uv_max = { 1.0f, 1.0f };
+
+    //     if (max_dimensions.x <= 0.0f) max_dimensions.x = size.x;
+    //     if (max_dimensions.y <= 0.0f) max_dimensions.y = size.y;
+
+    //     // Compute aspect ratio and adjust size:
+    //     float aspect_ratio = size.x / size.y;
+    //     if (size.x > max_dimensions.x || size.y > max_dimensions.y) {
+    //         if (aspect_ratio > 1.0f) {
+    //             size.x = max_dimensions.x;
+    //             size.y = max_dimensions.x / aspect_ratio;
+    //         } else {
+    //             size.y = max_dimensions.y;
+    //             size.x = max_dimensions.y * aspect_ratio;
+    //         }
+    //     }
+
+    //     return ImageButton(name, tex_id, size, uv_min, uv_max);
+    // }
+
     bool
     image_button(const char* name, const int texture_id, int width, int height, ImVec2 max_dimensions) {
         #pragma warning(push)
@@ -21785,28 +21815,30 @@ namespace ImGui_Extended {
             ImTextureID tex_id = (ImTextureID)texture_id;
         #pragma warning(pop)
 
-        // Calculate image size to fit within { max_dimensions } while retaining aspect ratio.
-        ImVec2 size   = { (float)width, (float)height };
+        const ImVec2 button_size = max_dimensions;
+        ImVec2 size = { (float)width, (float)height };
         ImVec2 uv_min = { 0.0f, 0.0f };
         ImVec2 uv_max = { 1.0f, 1.0f };
 
-        if (max_dimensions.x <= 0.0f) max_dimensions.x = size.x;
-        if (max_dimensions.y <= 0.0f) max_dimensions.y = size.y;
+        // Compute scaling factor to fill the 256x256 button while maintaining aspect ratio
+        float scale_x = button_size.x / size.x;
+        float scale_y = button_size.y / size.y;
+        float scale = scale_x > scale_y ? scale_x : scale_y; // Ensure image fills the button
 
-        // Compute aspect ratio and adjust size:
-        float aspect_ratio = size.x / size.y;
-        if (size.x > max_dimensions.x || size.y > max_dimensions.y) {
-            if (aspect_ratio > 1.0f) {
-                size.x = max_dimensions.x;
-                size.y = max_dimensions.x / aspect_ratio;
-            } else {
-                size.y = max_dimensions.y;
-                size.x = max_dimensions.y * aspect_ratio;
-            }
-        }
+        // Compute new UV coordinates for cropping
+        float new_width = size.x * scale;
+        float new_height = size.y * scale;
+        float excess_width = (new_width - button_size.x) / new_width;
+        float excess_height = (new_height - button_size.y) / new_height;
 
-        return ImageButton(name, tex_id, size, uv_min, uv_max);
+        uv_min.x = excess_width * 0.5f;
+        uv_min.y = excess_height * 0.5f;
+        uv_max.x = 1.0f - uv_min.x;
+        uv_max.y = 1.0f - uv_min.y;
+
+        return ImageButton(name, tex_id, button_size, uv_min, uv_max);
     }
+
 
 }
 #endif // USE_IMGUI_EXTENDED

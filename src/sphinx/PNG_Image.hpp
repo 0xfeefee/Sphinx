@@ -3,7 +3,11 @@
 /*
    32 bits per channel RGBA image on the CPU.
 */
+#include <sphinx/AES.hpp>
+
 namespace sphinx {
+
+    constexpr int MAX_MESSAGE_SIZE_BITS    = BLOCK_SIZE*4*8;
 
     struct PNG_Image {
         static constexpr int CHANNELS = 4;
@@ -20,6 +24,17 @@ namespace sphinx {
         [[nodiscard]]
         bool
         is_ready_to_render() const;
+
+        [[nodiscard]]
+        bool
+        try_write(const std::string& message, const std::string& image_filename);
+
+        void
+        clear_header();
+
+        [[nodiscard]]
+        std::string
+        read();
     };
 
 }

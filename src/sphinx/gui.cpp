@@ -51,7 +51,7 @@ namespace sphinx {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-        context->h_window = glfwCreateWindow(1920, 1080, "Sphinx", NULL, NULL);
+        context->h_window = glfwCreateWindow(1920, 1080, PROJECT_INFO_STRING, NULL, NULL);
         if (!context->h_window) {
             ERROR_IF(true, "Failed to create a GLFW platform window!");
             return;

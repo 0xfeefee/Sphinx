@@ -3,7 +3,7 @@
 ##
 cmake_minimum_required(VERSION 3.20)
 project(Sphinx
-	VERSION 0.6.0
+	VERSION 0.7.0
 	LANGUAGES C CXX
 )
 
@@ -14,12 +14,19 @@ set(SRC 			   "${CMAKE_CURRENT_LIST_DIR}/../src")
 set(VENDOR             "${CMAKE_CURRENT_LIST_DIR}/../vendor")
 set(TESTS              "${CMAKE_CURRENT_LIST_DIR}/../tests")
 
+
 ## Check release mode:
 if (CMAKE_BUILD_TYPE MATCHES Debug)
 	add_compile_definitions(PROJECT_BUILD_DEBUG=1)
 else()
 	add_compile_definitions(PROJECT_BUILD_RELEASE=1)
 endif()
+
+## Add info string:
+set(INFO_STRING
+	"${CMAKE_PROJECT_NAME} v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH} (${CMAKE_BUILD_TYPE})"
+)
+add_compile_definitions(PROJECT_INFO_STRING="${INFO_STRING}")
 
 
 ## Add: Dear ImGui
@@ -67,10 +74,9 @@ add_executable(${PROJECT_NAME}
 	${SRC}/main.cpp
 	${SRC}/sphinx/AES.cpp
 	${SRC}/sphinx/GUI.cpp
-	${SRC}/sphinx/Image.cpp
 	${SRC}/sphinx/PNG_Image.cpp
 	${SRC}/sphinx/Image_Manager.cpp
-	${SRC}/scene/Password_Manager.cpp
+	${SRC}/scene/Password_Manager_Scene.cpp
 	${SRC}/util/Thread_Pool.cpp
 )
 
