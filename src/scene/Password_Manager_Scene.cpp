@@ -412,7 +412,10 @@ namespace sphinx {
                                 context->content_input_buffer[0] = '\0';
                             } else {
                                 EXPECT(message.size() < MAX_MESSAGE_SIZE_BITS);
-                                std::memcpy(context->content_input_buffer, message.c_str(), message.size());
+                                // First decrypt the message:
+                                std::string message_decrypted = context->aes->decrypt(message).to_string();
+                                // Then copy it over:
+                                std::memcpy(context->content_input_buffer, message_decrypted.c_str(), message_decrypted.size());
                             }
                         }
                     }
@@ -428,7 +431,10 @@ namespace sphinx {
 
                     if (ImGui::Button("Commit##modal")) {
                         PNG_Image& current_image = context->image_manager.get_image(context->selected_image);
-                        if (!current_image.try_write(context->content_input_buffer, context->selected_image)) {
+                        std::string buffer_encrypted(context->content_input_buffer);
+                        buffer_encrypted = context->aes->encrypt(buffer_encrypted).to_string();
+
+                        if (!current_image.try_write(buffer_encrypted, context->selected_image)) {
                             context->errors.push_back("Unable to write to an image!");
                         } else {
                             ImGui::CloseCurrentPopup();
