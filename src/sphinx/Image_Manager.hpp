@@ -22,6 +22,9 @@ namespace sphinx {
 
         PNG_Image&
         get_image(const std::string& image_path);
+
+        void
+        save_image(const std::string& image_path);
     };
 
 }

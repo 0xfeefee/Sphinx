@@ -437,6 +437,7 @@ namespace sphinx {
                         if (!current_image.try_write(buffer_encrypted, context->selected_image)) {
                             context->errors.push_back("Unable to write to an image!");
                         } else {
+                            context->image_manager.save_image(context->selected_image);
                             ImGui::CloseCurrentPopup();
                         }
                     }

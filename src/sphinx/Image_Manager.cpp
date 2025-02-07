@@ -7,9 +7,9 @@
 #include <util/SWMR.hpp>
 
 // // Dependencies:
-// #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-// #define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
 #include <GL/gl3w.h>
@@ -24,39 +24,62 @@ namespace sphinx {
 
     class Image_Manager_Context {
     public:
-        static constexpr int IMG_LOADERS  { 8 };
+        static constexpr int IMG_LOADERS  { 7 };
+        static constexpr int IMG_WRITERS  { 1 };
 
     private:
         std::unordered_map<std::string, PNG_Image> images;
         Thread_Pool                                thread_pool;
         SWMR_Throwaway<std::string, IMG_LOADERS>   load_requests;
+        SWSR_Buffer<std::string>                   save_requests;
 
     private:
-        void
-        load_image_from_disk(const std::string& file_path, int index) {
-            PNG_Image& image = images[file_path];
-            EXPECT(!image.is_loaded() && file_path.size() > 0);
-
-            image.data = stbi_load(
-                file_path.c_str(),
-                (int*)&image.width,
-                (int*)&image.height,
-                NULL,
-                PNG_Image::CHANNELS
-            );
-
-            EXPECT(image.width > 0 && image.height > 0 && image.data != nullptr);
-        }
-
         void
         load_image_task(Stop_Flag& should_stop, int index) {
             while (!should_stop) {
                 std::string& image_path = load_requests.read(index);
-                if (image_path.size() > 0) {
-                    load_image_from_disk(image_path, index);
+                if (image_path.size() == 0) {
+                    sleep_for(16);
+                    continue;
                 }
 
-                sleep_for(16);
+                PNG_Image& image = images[image_path];
+                EXPECT(!image.is_loaded());
+
+                image.data = stbi_load(
+                    image_path.c_str(),
+                    (int*)&image.width,
+                    (int*)&image.height,
+                    NULL,
+                    PNG_Image::CHANNELS
+                );
+
+                EXPECT(image.width > 0 && image.height > 0 && image.data != nullptr);
+            }
+        }
+
+        void
+        save_image_task(Stop_Flag& should_stop, int index) {
+            while (!should_stop) {
+                if (save_requests.is_empty()) {
+                    sleep_for(16);
+                    continue;
+                }
+
+                std::string& image_path = save_requests.read();
+                EXPECT(image_path.size() > 0);
+
+                PNG_Image& image = images[image_path];
+                EXPECT(image.is_loaded());
+
+                stbi_write_png(
+                    image_path.c_str(),
+                    image.width,
+                    image.height,
+                    PNG_Image::CHANNELS,
+                    (void*)image.data,
+                    image.width*4
+                );
             }
         }
 
@@ -67,6 +90,15 @@ namespace sphinx {
                 thread_pool.start_thread(
                     [](Stop_Flag& stop_flag, int index, Image_Manager_Context* context) {
                         context->load_image_task(stop_flag, index);
+                    },
+                    this
+                );
+            }
+
+            for (int i = 0; i < IMG_WRITERS; ++i) {
+                thread_pool.start_thread(
+                    [](Stop_Flag& stop_flag, int index, Image_Manager_Context* context) {
+                        context->save_image_task(stop_flag, index);
                     },
                     this
                 );
@@ -85,6 +117,11 @@ namespace sphinx {
             }
 
             return image;
+        }
+
+        void
+        request_image_save(const std::string& image_path) {
+            save_requests.write(image_path);
         }
 
         void
@@ -135,6 +172,11 @@ namespace sphinx {
         }
 
         return image;
+    }
+
+    void
+    Image_Manager::save_image(const std::string& image_path) {
+        context->request_image_save(image_path);
     }
 
 }

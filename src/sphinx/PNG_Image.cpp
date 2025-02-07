@@ -2,13 +2,6 @@
 // Implements:
 #include <sphinx/PNG_Image.hpp>
 
-// Dependencies:
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
-
-
 namespace sphinx {
 
     constexpr int MESSAGE_HEADER_SIZE_BITS = 16;
@@ -66,16 +59,6 @@ namespace sphinx {
             // Write the message bit:
             data[i + MESSAGE_HEADER_SIZE_BITS] |= (message_data[i/8] >> ((message_size_bits - 1 - i) % 8)) & 1;
         }
-
-        // @todo: separate thread
-        stbi_write_png(
-            image_filename.c_str(),
-            width,
-            height,
-            CHANNELS,
-            (void*)data,
-            width*4
-        );
 
         return true;
     }
